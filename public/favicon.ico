@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
+  <defs>
+    <linearGradient id="monsterGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#22d3ee" />
+      <stop offset="50%" stop-color="#06b6d4" />
+      <stop offset="100%" stop-color="#6366f1" />
+    </linearGradient>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a" />
+      <stop offset="100%" stop-color="#020617" />
+    </linearGradient>
+  </defs>
+  <rect width="32" height="32" rx="8" fill="url(#bgGrad)" stroke="#1e293b" stroke-width="1.5" />
+  <path d="M7 23V11L12 17L16 12L20 17L25 11V23" stroke="url(#monsterGrad)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" />
+  <circle cx="16" cy="18.5" r="1.5" fill="#38bdf8" />
+</svg>

@@ -1,0 +1,65 @@
+# ==========================================
+# Node.js & Next.js 编译产物与依赖 (Standard)
+# ==========================================
+node_modules/
+.next/
+out/
+build/
+dist/
+.turbo/
+.vercel/
+
+# ==========================================
+# 日志与系统临时文件 (Standard)
+# ==========================================
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+.pnpm-debug.log*
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+*.log
+
+# ==========================================
+# 证书与密钥凭据 (Security)
+# ==========================================
+*.pem
+*.key
+*.crt
+*.p12
+*.cer
+*.pub
+id_rsa*
+
+# ==========================================
+# 环境变量与机密隔离 (Security)
+# ==========================================
+*.env
+*.env.*
+*.env.local
+!*.env.example
+
+# ==========================================
+# 运维手册、节点凭证与二维码 (Security)
+# ==========================================
+SERVER_AND_CREDENTIALS.md
+CLIENT_CONFIG.md
+cookies.txt
+*_qr.png
+*credential*
+*secret*
+
+# ==========================================
+# 内部自动化运维与迁移脚本 (Security)
+# ==========================================
+deploy*.sh
+*.sh
+seed.ts
+*.sql
