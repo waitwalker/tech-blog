@@ -1,6 +1,6 @@
 import React from 'react';
 import Link from 'next/link';
-import { Terminal, BookOpen, Layers, User, ExternalLink, Lock } from 'lucide-react';
+import { Terminal, BookOpen, Layers, User, ExternalLink, Lock, Box } from 'lucide-react';
 
 export const Header: React.FC = () => {
   return (
@@ -26,6 +26,10 @@ export const Header: React.FC = () => {
           <Link href="/categories" className="px-3 py-2 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/60 transition-colors flex items-center gap-1.5">
             <Layers className="w-4 h-4 text-cyan-400" />
             <span>分类</span>
+          </Link>
+          <Link href="/anatomy" className="px-3 py-2 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/60 transition-colors flex items-center gap-1.5">
+            <Box className="w-4 h-4 text-pink-400" />
+            <span>3D 实验室</span>
           </Link>
           <Link href="/about" className="px-3 py-2 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/60 transition-colors flex items-center gap-1.5">
             <User className="w-4 h-4 text-emerald-400" />
