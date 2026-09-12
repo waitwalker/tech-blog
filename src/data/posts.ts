@@ -1,3 +1,5 @@
+import { rustPosts } from "./rust-posts";
+
 export interface Post {
   slug: string;
   title: string;
@@ -10,7 +12,7 @@ export interface Post {
   tags: string[];
 }
 
-export const posts: Post[] = [
+const catalog: Post[] = [
 {
   "slug": "flutter-engine-architecture-overview",
   "title": "Flutter Engine 深度解密：从 C++ 核心、Dart VM 到 Shell 架构体系",
@@ -1564,3 +1566,5 @@ fn main() {
   "content": "\n## 1. Monorepo 目录结构规划\n\n```\nmy-monorepo/\n ├── apps/\n │    ├── web/        ── Next.js 15 客户端前端\n │    └── api/        ── NestJS 核心后端服务\n ├── packages/\n │    ├── types/      ── 共享 DTO 与数据模型接口\n │    ├── ui/         ── 共享通用 React 组件库\n │    └── config/     ── 共享 tsconfig 与 lint 规则\n └── turbo.json\n```\n"
 }
 ];
+
+export const posts: Post[] = [...catalog, ...rustPosts];

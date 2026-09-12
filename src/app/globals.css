@@ -30,3 +30,111 @@
   transform: translateY(-2px);
   box-shadow: 0 12px 30px -10px rgba(99, 102, 241, 0.15);
 }
+
+.article-body {
+  color: #cbd5e1;
+  font-size: 1.05rem;
+  line-height: 1.85;
+}
+
+.article-body > * + * {
+  margin-top: 1.15rem;
+}
+
+.article-body h2 {
+  margin-top: 2.2rem;
+  margin-bottom: 0.75rem;
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #f8fafc;
+  letter-spacing: -0.02em;
+  padding-bottom: 0.45rem;
+  border-bottom: 1px solid rgba(51, 65, 85, 0.8);
+}
+
+.article-body h3 {
+  margin-top: 1.6rem;
+  font-size: 1.12rem;
+  font-weight: 700;
+  color: #e2e8f0;
+}
+
+.article-body p {
+  color: #cbd5e1;
+}
+
+.article-body strong {
+  color: #f8fafc;
+  font-weight: 700;
+}
+
+.article-body a {
+  color: #818cf8;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.article-body ul,
+.article-body ol {
+  padding-left: 1.35rem;
+  display: grid;
+  gap: 0.4rem;
+}
+
+.article-body li::marker {
+  color: #22d3ee;
+}
+
+.article-body blockquote {
+  margin: 1.2rem 0;
+  padding: 0.85rem 1rem;
+  border-left: 3px solid #6366f1;
+  background: rgba(99, 102, 241, 0.08);
+  color: #e2e8f0;
+  border-radius: 0 12px 12px 0;
+}
+
+.article-body code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.86em;
+  color: #67e8f9;
+  background: rgba(15, 23, 42, 0.9);
+  border: 1px solid rgba(51, 65, 85, 0.8);
+  border-radius: 6px;
+  padding: 0.12rem 0.35rem;
+}
+
+.article-body pre {
+  overflow-x: auto;
+  padding: 1rem 1.1rem;
+  border-radius: 14px;
+  background: #020617;
+  border: 1px solid rgba(51, 65, 85, 0.9);
+}
+
+.article-body pre code {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  color: #e2e8f0;
+  font-size: 0.84rem;
+  line-height: 1.7;
+}
+
+.article-body table {
+  width: 100%;
+  font-size: 0.9rem;
+  border-collapse: collapse;
+}
+
+.article-body th,
+.article-body td {
+  border: 1px solid rgba(51, 65, 85, 0.9);
+  padding: 0.5rem 0.7rem;
+  text-align: left;
+}
+
+.article-body th {
+  background: rgba(15, 23, 42, 0.8);
+  color: #e2e8f0;
+}

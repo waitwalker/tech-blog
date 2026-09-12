@@ -63,3 +63,4 @@ deploy*.sh
 *.sh
 seed.ts
 *.sql
+*.tsbuildinfo
