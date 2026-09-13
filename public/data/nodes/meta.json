@@ -1,0 +1,33 @@
+{
+  "total_unique_nodes": 126701,
+  "total_channels": 34,
+  "total_config_files": 110,
+  "curated_pool_size": 2455,
+  "protocol_breakdown": {
+    "vless": 119098,
+    "ss": 2340,
+    "trojan": 2180,
+    "vmess": 1420,
+    "hy2": 32
+  },
+  "country_breakdown": {
+    "HK": "中国香港",
+    "JP": "日本",
+    "US": "美国",
+    "SG": "新加坡",
+    "TW": "中国台湾",
+    "KR": "韩国",
+    "DE": "德国",
+    "GB": "英国",
+    "NL": "荷兰",
+    "FR": "法国",
+    "CA": "加拿大",
+    "RU": "俄罗斯"
+  },
+  "security_breakdown": {
+    "safe": 111496,
+    "medium": 11403,
+    "warning": 3801
+  },
+  "updated_at": "2026-09-13T08:35:00Z"
+}
