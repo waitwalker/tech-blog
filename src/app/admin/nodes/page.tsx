@@ -668,11 +668,16 @@ async function testWebSocketProbe(host: string, port: number, path: string = '/'
   });
 }
 
-// 客户端机房 Ping 测速
-async function measureNodePing(host: string, port: number): Promise<number | -1> {
+// 客户端机房 Ping 测速（严谨网络握手检测）
+async function measureNodePing(host: string, port: number, isGfwBlockedSni?: boolean): Promise<number | -1> {
+  // 如果已预先识别出被 GFW 深度阻断的伪装域名（如 workers.dev/pages.dev），手机与内网必断，直接判定不可达
+  if (isGfwBlockedSni) {
+    return -1;
+  }
+
   const startTime = performance.now();
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 2200);
+  const timeoutId = setTimeout(() => controller.abort(), 2000);
 
   try {
     const isHttps = port === 443 || port === 8443 || port === 2053 || port === 2083 || port === 2087 || port === 2096;
@@ -684,16 +689,12 @@ async function measureNodePing(host: string, port: number): Promise<number | -1>
       signal: controller.signal
     });
     clearTimeout(timeoutId);
-    return Math.max(12, Math.round(performance.now() - startTime));
+    // 只有在真正完成网络往返握手无报错时才返回真实耗时
+    return Math.max(15, Math.round(performance.now() - startTime));
   } catch (err: any) {
     clearTimeout(timeoutId);
-    if (err.name === 'AbortError') {
-      return -1;
-    }
-    const elapsed = Math.round(performance.now() - startTime);
-    if (elapsed > 10 && elapsed < 2200) {
-      return elapsed;
-    }
+    // 关键修正：在移动/电信/联通网络下，GFW 下发 TCP RST 重置包或连接被拒时，fetch 会在几十毫秒内报错。
+    // 严禁将报错耗时作为延迟返回，任何网络层异常一律判定为超时（-1）！
     return -1;
   }
 }
@@ -1024,7 +1025,7 @@ export default function AdminNodesPage() {
           return updated;
         });
 
-        const latency = await measureNodePing(target.host, target.port);
+        const latency = await measureNodePing(target.host, target.port, target.usability.gfwBlockedSni);
 
         setInspectorNodes((prev) => {
           const updated = [...prev];
@@ -1058,7 +1059,7 @@ export default function AdminNodesPage() {
       return updated;
     });
 
-    const latency = await measureNodePing(target.host, target.port);
+    const latency = await measureNodePing(target.host, target.port, target.usability.gfwBlockedSni);
 
     setInspectorNodes((prev) => {
       const updated = [...prev];
@@ -1094,13 +1095,14 @@ export default function AdminNodesPage() {
   };
 
   // Tab 2 单节点测速
-  const pingSingleTab2Node = async (nodeId: string, host: string, port: number) => {
+  const pingSingleTab2Node = async (nodeId: string, host: string, port: number, link?: string) => {
     setTab2PingMap((prev) => ({
       ...prev,
       [nodeId]: { latency: prev[nodeId]?.latency ?? null, status: 'testing' }
     }));
 
-    const latency = await measureNodePing(host, port);
+    const isBlocked = link ? GFW_BLOCKED_SNI_KEYWORDS.some((kw) => link.toLowerCase().includes(kw)) : false;
+    const latency = await measureNodePing(host, port, isBlocked);
 
     setTab2PingMap((prev) => ({
       ...prev,
@@ -1122,7 +1124,7 @@ export default function AdminNodesPage() {
     const runWorker = async () => {
       while (index < visibleNodes.length) {
         const curr = visibleNodes[index++];
-        await pingSingleTab2Node(curr.id, curr.host, curr.port);
+        await pingSingleTab2Node(curr.id, curr.host, curr.port, curr.link);
       }
     };
 
@@ -1383,6 +1385,58 @@ export default function AdminNodesPage() {
             Reality / 白名单纯净源
           </div>
           <div className="text-[11px] text-slate-400 mt-1 font-mono">手机端 95%+ 秒连真实连通率</div>
+        </div>
+      </div>
+
+      {/* 🇨🇳 国内三大运营商（中国移动 / 联通 / 电信）手机测速超时排查与实战指南 */}
+      <div className="p-5 rounded-2xl bg-gradient-to-r from-amber-950/40 via-slate-900/90 to-slate-900/90 border border-amber-500/30 backdrop-blur-xl shadow-xl">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-slate-800/80 pb-4 mb-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0">
+              <ShieldAlert className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-white flex items-center gap-2">
+                国内三大运营商（中国移动 / 联通 / 电信）手机端超时排查指南
+                <span className="text-[11px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-mono">实战必读</span>
+              </h3>
+              <p className="text-xs text-slate-400 mt-0.5">
+                为什么节点在网页上测试显示通畅，但在手机移动/联通/电信 4G/5G 网络下 Ping（测速）全部显示超时？
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+          <div className="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800/80">
+            <div className="font-semibold text-rose-300 mb-1.5 flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-rose-400" />
+              1. 手机客户端 Ping 的底层真相
+            </div>
+            <p className="text-slate-400 leading-relaxed">
+              手机端（Clash / Shadowrocket / v2rayNG）的 Ping 是<strong className="text-slate-200 font-medium">真实端到端代理连通性测试（发送 Google 204 请求）</strong>。必须通过节点在海外的代理服务建立完整隧道。如果远端服务停运、密码失效或被 GFW 拦截，手机端 100% 报“超时”。
+            </p>
+          </div>
+
+          <div className="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800/80">
+            <div className="font-semibold text-amber-300 mb-1.5 flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-amber-400" />
+              2. 反俄封锁源 (Anti-RKN) 的国内局限
+            </div>
+            <p className="text-slate-400 leading-relaxed">
+              本开源数据来自俄罗斯反封锁库，其初衷是为俄罗斯网民绕过 RKN 审查，<strong className="text-slate-200 font-medium">并非针对中国 GFW 定制</strong>。大量免费节点在海外活蹦乱跳，但在中国移动（重点封锁 CF IP 与非标端口）、电信和联通的国际出口处，早已被列入阻断黑名单。
+            </p>
+          </div>
+
+          <div className="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800/80">
+            <div className="font-semibold text-emerald-300 mb-1.5 flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-emerald-400" />
+              3. 手机客户端 30 秒实战淘金法则
+            </div>
+            <p className="text-slate-400 leading-relaxed">
+              导入几千个节点后，<strong className="text-slate-200 font-medium">切勿盲目一个个试</strong>！在 Shadowrocket / Clash 中点击「全部测速」，测完后点击「按延迟排序」，<strong className="text-emerald-400">直接批量删除下方所有显示超时的节点</strong>，只保留上方极少数能出延迟（200~400ms）的可用真节点！
+            </p>
+          </div>
         </div>
       </div>
 
@@ -1841,7 +1895,7 @@ export default function AdminNodesPage() {
                         </span>
 
                         <button
-                          onClick={() => pingSingleTab2Node(node.id, node.host, node.port)}
+                          onClick={() => pingSingleTab2Node(node.id, node.host, node.port, node.link)}
                           disabled={livePing?.status === 'testing'}
                           title="点击测试机房网络延迟"
                           className={`text-[11px] px-2 py-0.5 rounded-full font-mono flex items-center gap-1 transition-all ${
