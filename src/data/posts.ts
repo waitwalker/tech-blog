@@ -5,7 +5,7 @@ export interface Post {
   title: string;
   excerpt: string;
   content: string;
-  category: 'Flutter' | 'Rust' | 'Next.js' | 'NestJS' | 'Architecture';
+  category: 'Flutter' | 'Rust' | 'Next.js' | 'Architecture';
   date: string;
   readTime: string;
   author: string;
@@ -1083,246 +1083,261 @@ fn main() {
   }
 ,
 {
-  "slug": "nestjs-architecture-and-ioc-di",
-  "title": "NestJS 架构解密：IoC 控制反转与 DI 依赖注入容器底层实现",
-  "excerpt": "深入探究 NestJS 如何利用 TypeScript 元数据反射 (reflect-metadata) 构建依赖关系图，实现高内聚低耦合的企业级架构。",
-  "category": "NestJS",
+  "slug": "nextjs-dynamic-og-image-generation",
+  "title": "Next.js 15 动态 OpenGraph 社交图生成：Satori 引擎、@vercel/og 与 Edge 渲染管线",
+  "excerpt": "深入探究 @vercel/og 底层原理：从 JSX 到 Yoga 弹性盒布局、Satori SVG 矢量转换与 Resvg PNG 栅格化流水线。",
+  "category": "Next.js",
   "date": "2026-08-20",
+  "readTime": "16 min",
+  "author": "Waitwalker",
+  "tags": [
+    "Next.js",
+    "OpenGraph",
+    "Satori",
+    "Edge Runtime",
+    "性能优化"
+  ],
+  "content": "\n## 1. 动态 OpenGraph 渲染流水线全景解密\n\n在现代 Web 应用中，动态生成包含标题、作者与品牌视觉的社交卡片能够显著提升点击率。`@vercel/og` 依托 Satori 引擎与 Resvg，将 JSX 声明式 UI 在 Edge Runtime 毫秒级转换为高质量 PNG。\n\n```tsx\nimport { ImageResponse } from 'next/og';\nexport const runtime = 'edge';\n\nexport default async function Image() {\n  return new ImageResponse(\n    <div style={{ display: 'flex', background: '#090d16', color: '#fff', padding: 40 }}>\n      <h1>MonsterAI 动态分享图</h1>\n    </div>,\n    { width: 1200, height: 630 }\n  );\n}\n```\n"
+},
+{
+  "slug": "nextjs-webassembly-high-performance-compute",
+  "title": "Next.js 15 与 WebAssembly (Wasm) 深度整合：Rust 密集算力迁移与边缘协同",
+  "excerpt": "解密 WebAssembly 在 Next.js 15 中的编译与加载流水线：wasm-pack 构建、Turbopack 异步引入与浏览器/Edge 双端算力加速。",
+  "category": "Next.js",
+  "date": "2026-08-20",
+  "readTime": "18 min",
+  "author": "Waitwalker",
+  "tags": [
+    "Next.js",
+    "WebAssembly",
+    "Rust",
+    "Wasm",
+    "高性能计算"
+  ],
+  "content": "\n## 1. WebAssembly 线性内存与零拷贝调用\n\n将 Rust 密集计算（如加密、图像滤波与仿真）编译为 Wasm，结合 Next.js 15 的异步 WebAssembly 模块加载，打破 JavaScript 事件循环算力天花板。\n\n```rust\n#[wasm_bindgen]\npub fn process_pixels(buffer: &mut [u8]) {\n    // 底层 CPU 指令级并行加速计算\n}\n```\n"
+},
+{
+  "slug": "nextjs-progressive-web-app-offline-workbox",
+  "title": "Next.js 15 渐进式 Web 应用 (PWA)：Workbox 离线缓存、Serwist 与 Service Worker 生命周期",
+  "excerpt": "构建离线可用原生级 Web 体验：Service Worker 注册流水线、Workbox 运行时缓存策略（Stale-While-Revalidate vs Cache-First）与后台同步。",
+  "category": "Next.js",
+  "date": "2026-08-21",
   "readTime": "15 min",
   "author": "Waitwalker",
   "tags": [
-    "NestJS",
-    "IoC/DI",
-    "TypeScript",
-    "后端架构"
+    "Next.js",
+    "PWA",
+    "Workbox",
+    "Service Worker",
+    "离线优先"
   ],
-  "content": "\n## 1. 为什么 NestJS 引入 IoC 控制反转？\n\n在传统 Node.js 服务端开发中，类与类之间往往直接通过 `new Service()` 紧密耦合，导致单元测试困难、模块难以替换。\nNestJS 引入了 **IoC (Inversion of Control)** 与 **DI (Dependency Injection)**：\n- 对象的生命周期和装配逻辑交由 Nest 运行时容器统一管理。\n- 类只需声明依赖，无需关心依赖如何被实例化。\n\n```typescript\n@Injectable()\nexport class UsersService {\n  constructor(private readonly usersRepository: UsersRepository) {}\n}\n\n@Controller(\"users\")\nexport class UsersController {\n  constructor(private readonly usersService: UsersService) {}\n}\n```\n\n## 2. reflect-metadata 与设计期类型提取\n\nNestJS 通过 `emitDecoratorMetadata: true` 编译选项，在运行时借助 `Reflect.getMetadata(\"design:paramtypes\", target)` 自动捕获构造函数入参的真实类型，进而实现全自动化的依赖注入。\n"
+  "content": "\n## 1. 现代 PWA 与 Serwist 架构\n\n淘汰年久失修的旧插件，采用 Serwist 深度适配 Next.js 15 App Router。通过静态预缓存清册与动态分级运行时缓存，实现断网环境下无缝阅读与秒级加载。\n"
 },
 {
-  "slug": "nestjs-modules-and-dynamic-modules",
-  "title": "NestJS 模块化设计：根模块、共享模块与 DynamicModule 动态配置",
-  "excerpt": "掌握 @Module 装饰器中的 imports、exports、controllers 与 providers 拓扑关系，深入解析 forRoot/forFeature 动态模块封装。",
-  "category": "NestJS",
-  "date": "2026-08-20",
-  "readTime": "14 min",
-  "author": "Waitwalker",
-  "tags": [
-    "NestJS",
-    "模块化",
-    "DynamicModule",
-    "架构设计"
-  ],
-  "content": "\n## 1. 模块的作用域与导出机制\n\nNestJS 应用是一棵由 `AppModule` 根模块发散开来的树状结构。模块内部的 Provider 默认都是私有的，必须在 `exports` 数组中显式导出，其他模块才能在 `imports` 后使用。\n\n## 2. DynamicModule 实战：通用配置模块\n\n```typescript\n@Module({})\nexport class DatabaseModule {\n  static forRoot(options: DatabaseOptions): DynamicModule {\n    return {\n      module: DatabaseModule,\n      providers: [\n        {\n          provide: \"DATABASE_CONNECTION\",\n          useValue: createConnection(options),\n        },\n      ],\n      exports: [\"DATABASE_CONNECTION\"],\n    };\n  }\n}\n```\n"
-},
-{
-  "slug": "nestjs-controllers-routing-and-params",
-  "title": "NestJS 控制器与路由：参数装饰器 (@Param, @Body, @Query) 与 DTO 实践",
-  "excerpt": "构建类型安全 RESTful API 端点：深入解析路由映射、HTTP 状态码控制、自定义参数装饰器与数据传输对象 (DTO) 设计。",
-  "category": "NestJS",
+  "slug": "nextjs-turbopack-bundler-deep-dive",
+  "title": "Turbopack 深度构建调优：Rust 增量计算引擎、SWC 转换与模块图拓扑",
+  "excerpt": "下一代打包器底层揭秘：Turbo 增量计算缓存图 (Turbo Engine)、SWC AST 转换流水线与毫秒级 HMR 热更新原理。",
+  "category": "Next.js",
   "date": "2026-08-21",
-  "readTime": "11 min",
+  "readTime": "17 min",
   "author": "Waitwalker",
   "tags": [
-    "NestJS",
-    "Controller",
-    "RESTful",
-    "DTO"
+    "Next.js",
+    "Turbopack",
+    "Rust",
+    "SWC",
+    "构建调优"
   ],
-  "content": "\n## 1. RESTful 控制器定义\n\n```typescript\n@Controller(\"api/v1/articles\")\nexport class ArticlesController {\n  @Get(\":id\")\n  @HttpCode(HttpStatus.OK)\n  async findOne(@Param(\"id\", ParseIntPipe) id: number) {\n    return this.articlesService.findById(id);\n  }\n\n  @Post()\n  async create(@Body() createArticleDto: CreateArticleDto) {\n    return this.articlesService.create(createArticleDto);\n  }\n}\n```\n"
+  "content": "\n## 1. Turbo Engine 增量函数计算图\n\nTurbopack 将所有编译过程建模为纯函数 `f(Input) -> Output`，建立有向无环图（DAG）。代码修改时仅让受影响的微量函数缓存失效，实现 < 10ms 的极致 HMR。\n"
 },
 {
-  "slug": "nestjs-providers-and-custom-providers",
-  "title": "NestJS Provider 全解：useClass, useValue, useFactory 与异步提供者",
-  "excerpt": "超越简单的 @Injectable()：深度掌握各种自定义提供者模式、第三方 SDK 实例化注入与异步连接池配置。",
-  "category": "NestJS",
-  "date": "2026-08-21",
-  "readTime": "13 min",
-  "author": "Waitwalker",
-  "tags": [
-    "NestJS",
-    "Provider",
-    "useFactory",
-    "依赖注入"
-  ],
-  "content": "\n## 1. 异步提供者 (Async Providers)\n\n在服务启动前必须完成异步初始化（如连接远程数据库、获取微服务配置中心配置）时，`useFactory` 配合 `async/await` 是最佳方案：\n\n```typescript\nexport const connectionFactory = {\n  provide: \"ASYNC_DB_CONNECTION\",\n  useFactory: async (configService: ConfigService) => {\n    const conn = await createDbClient(configService.get(\"DB_URL\"));\n    return conn;\n  },\n  inject: [ConfigService],\n};\n```\n"
-},
-{
-  "slug": "nestjs-middleware-request-lifecycle",
-  "title": "NestJS 中间件与请求生命周期：函数中间件与全局注册机制",
-  "excerpt": "剖析 NestJS 请求处理流水线中中间件、守卫、拦截器、管道与过滤器的确切执行时序，以及 Morgan 日志中间件整合。",
-  "category": "NestJS",
+  "slug": "nextjs-microfrontends-and-module-federation",
+  "title": "Next.js 现代化微前端架构：Multi-Zones 拓扑拆分、Module Federation 与跨应用状态",
+  "excerpt": "拆解大型前端单体应用：Next.js Multi-Zones 独立部署与 URL 重写网关，结合 Module Federation 2.0 实现运行时组件共享。",
+  "category": "Next.js",
   "date": "2026-08-22",
-  "readTime": "12 min",
+  "readTime": "19 min",
   "author": "Waitwalker",
   "tags": [
-    "NestJS",
-    "Middleware",
-    "请求生命周期",
-    "AOP"
+    "Next.js",
+    "微前端",
+    "Multi-Zones",
+    "Module Federation",
+    "系统架构"
   ],
-  "content": "\n## 1. 请求处理流水线黄金时序\n\n```\nIncoming Request\n      ↓\n1. Global & Route Middleware (中间件)\n      ↓\n2. Global, Controller & Route Guards (守卫)\n      ↓\n3. Global, Controller & Route Interceptors (拦截器 - 前置)\n      ↓\n4. Global, Controller & Route Pipes (管道校验)\n      ↓\n5. Controller Route Handler (业务方法执行)\n      ↓\n6. Service & Data Layer (业务逻辑与数据库)\n      ↓\n7. Route, Controller & Global Interceptors (拦截器 - 后置/响应转换)\n      ↓\n8. Exception Filters (异常捕获 - 若有错误)\n      ↓\nOutgoing Response\n```\n"
+  "content": "\n## 1. Multi-Zones 多区域架构\n\n将巨石应用拆分为独立部署的多个 Next.js 实例，通过 Caddy/Nginx 统一路由反向代理，实现 100% 的团队独立构建与故障物理隔离。\n"
 },
 {
-  "slug": "nestjs-pipes-and-validation-class-validator",
-  "title": "NestJS 管道 (Pipes) 与参数校验：ValidationPipe 与 class-validator 实战",
-  "excerpt": "自动化入参防御：使用 class-validator 装饰器声明数据边界，利用 class-transformer 自动转换类型，杜绝注入风险。",
-  "category": "NestJS",
+  "slug": "nextjs-auth-patterns-and-session-management",
+  "title": "Next.js 现代身份认证全景：Iron-session 无状态加密 Cookie、JWT 与严格服务端鉴权",
+  "excerpt": "安全第一的身份验证架构：无状态封印 Cookie (Sealed Cookies)、JWT 双令牌轮换 (Access + Refresh Token) 与 Server Action 鉴权校验。",
+  "category": "Next.js",
   "date": "2026-08-22",
-  "readTime": "10 min",
+  "readTime": "18 min",
   "author": "Waitwalker",
   "tags": [
-    "NestJS",
-    "Pipes",
-    "Validation",
-    "安全防御"
-  ],
-  "content": "\n## 1. 全局 ValidationPipe 开启\n\n```typescript\napp.useGlobalPipes(\n  new ValidationPipe({\n    whitelist: true, // 自动剥离 DTO 中未声明的冗余字段\n    forbidNonWhitelisted: true, // 存在多余字段时直接抛出 400 错误\n    transform: true, // 自动根据 TS 类型做基本类型转换\n  })\n);\n```\n\n## 2. DTO 声明式校验\n\n```typescript\nexport class CreateUserDto {\n  @IsString()\n  @MinLength(3)\n  username: string;\n\n  @IsEmail()\n  email: string;\n\n  @IsInt()\n  @Min(18)\n  age: number;\n}\n```\n"
-},
-{
-  "slug": "nestjs-guards-and-rbac-authentication",
-  "title": "NestJS 守卫 (Guards) 与权限控制：JWT 鉴权、Passport 与 RBAC 角色系统",
-  "excerpt": "基于 Passport-JWT 构建无状态接口安全认证，利用反射自定义 @Roles() 装饰器与 ExecutionContext 实现基于角色的访问控制。",
-  "category": "NestJS",
-  "date": "2026-08-23",
-  "readTime": "15 min",
-  "author": "Waitwalker",
-  "tags": [
-    "NestJS",
-    "Guards",
+    "Next.js",
+    "身份认证",
     "JWT",
-    "RBAC",
-    "安全"
+    "Iron-session",
+    "安全架构"
   ],
-  "content": "\n## 1. RolesGuard 角色守卫实现\n\n```typescript\n@Injectable()\nexport class RolesGuard implements CanActivate {\n  constructor(private reflector: Reflector) {}\n\n  canActivate(context: ExecutionContext): boolean {\n    const requiredRoles = this.reflector.getAllAndOverride<Role[]>(ROLES_KEY, [\n      context.getHandler(),\n      context.getClass(),\n    ]);\n    if (!requiredRoles) return true;\n\n    const { user } = context.switchToHttp().getRequest();\n    return requiredRoles.some((role) => user.roles?.includes(role));\n  }\n}\n```\n"
+  "content": "\n## 1. 无状态密封 Cookie 架构\n\n摒弃在 localStorage 中暴露明文 Token 的危险做法，利用 iron-session 将会话以 AES-256-GCM 强加密存入 httpOnly Cookie，彻底免疫 XSS 窃取。\n"
 },
 {
-  "slug": "nestjs-interceptors-aspect-oriented-programming",
-  "title": "NestJS 拦截器 (Interceptors) 与 AOP 切面编程：响应转换与耗时统计",
-  "excerpt": "利用 RxJS 响应式操作符在方法执行前后插入切面逻辑：统一 API JSON 返回格式、日志耗时度量与接口响应缓存。",
-  "category": "NestJS",
+  "slug": "nextjs-seo-architecture-and-metadata-api",
+  "title": "Next.js 15 企业级 SEO 体系：Metadata API、动态 Sitemap、Robots 与 JSON-LD 结构化数据",
+  "excerpt": "从爬虫友好到搜索引擎顶级权重：深入 Metadata 对象继承树、generateMetadata 并发解析与 Schema.org 结构化数据自动化注入。",
+  "category": "Next.js",
   "date": "2026-08-23",
-  "readTime": "13 min",
+  "readTime": "15 min",
   "author": "Waitwalker",
   "tags": [
-    "NestJS",
-    "Interceptors",
-    "AOP",
-    "RxJS"
+    "Next.js",
+    "SEO",
+    "Metadata",
+    "Sitemap",
+    "结构化数据"
   ],
-  "content": "\n## 1. 统一数据结构拦截器 (TransformInterceptor)\n\n```typescript\n@Injectable()\nexport class TransformInterceptor<T> implements NestInterceptor<T, Response<T>> {\n  intercept(context: ExecutionContext, next: CallHandler): Observable<Response<T>> {\n    return next.handle().pipe(\n      map((data) => ({\n        code: 200,\n        message: \"success\",\n        data,\n        timestamp: Date.now(),\n      }))\n    );\n  }\n}\n```\n"
+  "content": "\n## 1. Metadata 树状继承与动态计算\n\n通过 App Router 顶层约定文件 `sitemap.ts` 与 `robots.ts`，配合 `generateMetadata` 和 JSON-LD，全面提升搜索引擎收录与富文本展示效果。\n"
 },
 {
-  "slug": "nestjs-exception-filters-and-global-handling",
-  "title": "NestJS 异常过滤器 (Exception Filters)：全局统一错误捕获与状态码映射",
-  "excerpt": "优雅接管全系统未捕获错误：区分 HttpException 与系统级 Fatal Error，输出规范化、包含 requestId 的友好错误响应。",
-  "category": "NestJS",
-  "date": "2026-08-24",
-  "readTime": "12 min",
+  "slug": "nextjs-internationalization-routing-patterns",
+  "title": "Next.js 15 无痛国际化 (i18n) 实践：子路径路由、字典按需懒加载与 RTL 双向排版",
+  "excerpt": "打造全球化多语言站点：App Router 国际化动态段 [lang]、请求级字典懒加载、类型安全翻译键与多语言 SEO hreflang 声明。",
+  "category": "Next.js",
+  "date": "2026-08-23",
+  "readTime": "16 min",
   "author": "Waitwalker",
   "tags": [
-    "NestJS",
-    "ExceptionFilter",
-    "错误治理",
-    "系统稳定性"
+    "Next.js",
+    "i18n",
+    "多语言",
+    "App Router",
+    "国际化"
   ],
-  "content": "\n## 1. 全局 HttpExceptionFilter\n\n```typescript\n@Catch()\nexport class AllExceptionsFilter implements ExceptionFilter {\n  catch(exception: unknown, host: ArgumentsHost) {\n    const ctx = host.switchToHttp();\n    const response = ctx.getResponse<Response>();\n    const request = ctx.getRequest<Request>();\n\n    const status = exception instanceof HttpException \n      ? exception.getStatus() \n      : HttpStatus.INTERNAL_SERVER_ERROR;\n\n    response.status(status).json({\n      statusCode: status,\n      path: request.url,\n      timestamp: new Date().toISOString(),\n      message: (exception as any)?.message || \"Internal Server Error\",\n    });\n  }\n}\n```\n"
+  "content": "\n## 1. [lang] 动态路由段与中间件协商\n\n利用服务端动态 import 字典，客户端零打包体积增加；配合 CSS 逻辑属性（ms/me/start/end），完美适配阿拉伯语等 RTL 自右向左书写系统。\n"
 },
 {
-  "slug": "nestjs-typeorm-database-integration",
-  "title": "NestJS 数据库实战：TypeORM 实体映射、Repository 模式与事务控制",
-  "excerpt": "在 NestJS 中集成关系型数据库：Entity 关系建模 (1:1, 1:N, N:M)、QueryRunner 编程式事务与数据库迁移自动化。",
-  "category": "NestJS",
+  "slug": "nextjs-form-validation-zod-react-hook-form",
+  "title": "Next.js 15 全栈表单验证体系：React Hook Form、Zod 模式验证与 Server Action 联动",
+  "excerpt": "打造零冗余类型安全表单：Zod Schema 双端复用、客户端即时交互反馈、useActionState 状态同步与后端防御性数据拦截。",
+  "category": "Next.js",
   "date": "2026-08-24",
   "readTime": "16 min",
   "author": "Waitwalker",
   "tags": [
-    "NestJS",
-    "TypeORM",
-    "MySQL/PostgreSQL",
-    "事务"
-  ],
-  "content": "\n## 1. QueryRunner 编程式事务实战\n\n```typescript\nasync transferFunds(fromId: number, toId: number, amount: number) {\n  const queryRunner = this.dataSource.createQueryRunner();\n  await queryRunner.connect();\n  await queryRunner.startTransaction();\n\n  try {\n    await queryRunner.manager.decrement(Account, { id: fromId }, \"balance\", amount);\n    await queryRunner.manager.increment(Account, { id: toId }, \"balance\", amount);\n    await queryRunner.commitTransaction();\n  } catch (err) {\n    await queryRunner.rollbackTransaction();\n    throw err;\n  } finally {\n    await queryRunner.release();\n  }\n}\n```\n"
-},
-{
-  "slug": "nestjs-prisma-orm-modern-data-access",
-  "title": "NestJS 与 Prisma ORM 整合：类型安全查询、模型迁移与连接池调优",
-  "excerpt": "现代 TypeScript 后端的新宠：结合 Prisma Client 打造 100% 编译期类型安全的持久层，以及优雅的软删除与审计日志扩展。",
-  "category": "NestJS",
-  "date": "2026-08-25",
-  "readTime": "14 min",
-  "author": "Waitwalker",
-  "tags": [
-    "NestJS",
-    "Prisma",
-    "ORM",
+    "Next.js",
+    "Zod",
+    "React Hook Form",
+    "表单验证",
     "TypeScript"
   ],
-  "content": "\n## 1. PrismaService 单例管理\n\n```typescript\n@Injectable()\nexport class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {\n  async onModuleInit() {\n    await this.$connect();\n  }\n\n  async onModuleDestroy() {\n    await this.$disconnect();\n  }\n}\n```\n"
+  "content": "\n## 1. Zod 双端统一验证架构\n\n单一 Schema 定义，客户端 React Hook Form 非受控绑定实现零无用重渲染，服务端 Server Action safeParse 终极拦截防御非法注入。\n"
 },
 {
-  "slug": "nestjs-swagger-openapi-documentation",
-  "title": "NestJS 自动化 API 文档：Swagger (OpenAPI) 装饰器与类型全量导出",
-  "excerpt": "让文档与代码同行：利用 @ApiTags、@ApiOperation 与 @ApiResponse 自动生成交互式在线接口调试文档与客户端 SDK 代码。",
-  "category": "NestJS",
+  "slug": "nextjs-database-integration-drizzle-orm",
+  "title": "Next.js 15 现代化数据库持久层：Drizzle ORM 类型安全查询、连接池管理与 Edge 兼容",
+  "excerpt": "轻量零开销 SQL 优先方案：Drizzle ORM Schema 声明式设计、Postgres/MySQL 驱动连接池配置、Server Component 直连查库与迁移自动化。",
+  "category": "Next.js",
+  "date": "2026-08-24",
+  "readTime": "17 min",
+  "author": "Waitwalker",
+  "tags": [
+    "Next.js",
+    "Drizzle ORM",
+    "PostgreSQL",
+    "数据库",
+    "类型安全"
+  ],
+  "content": "\n## 1. 极轻量纯 TypeScript ORM\n\n零 Rust 二进制引擎负担，冷启动 < 2ms，支持在 Serverless 与 Edge 原生运行。Server Components 直连查库彻底消除额外网络往返。\n"
+},
+{
+  "slug": "nextjs-security-hardening-csp-headers",
+  "title": "Next.js 生产环境安全加固：严格内容安全策略 (CSP)、Nonce 动态注入与安全标头",
+  "excerpt": "构筑坚如磐石的防御屏障：在 App Router 中通过中间件生成随机 Nonce、严格 Content-Security-Policy 拦截 XSS、HSTS 与 CORS 配置。",
+  "category": "Next.js",
   "date": "2026-08-25",
-  "readTime": "11 min",
+  "readTime": "18 min",
   "author": "Waitwalker",
   "tags": [
-    "NestJS",
-    "Swagger",
-    "OpenAPI",
-    "工程效率"
+    "Next.js",
+    "Web安全",
+    "CSP",
+    "Nonce",
+    "生产加固"
   ],
-  "content": "\n## 1. Swagger 引导配置\n\n```typescript\nconst config = new DocumentBuilder()\n  .setTitle(\"MonsterAI API\")\n  .setDescription(\"企业级服务接口规范\")\n  .setVersion(\"1.0\")\n  .addBearerAuth()\n  .build();\n\nconst document = SwaggerModule.createDocument(app, config);\nSwaggerModule.setup(\"docs\", app, document);\n```\n"
+  "content": "\n## 1. 动态 Nonce 严格 CSP 防线\n\n中间件逐请求生成高熵随机 Nonce 并注入响应标头，React 服务端组件自动绑定内联脚本，物理拦截所有未经授权的恶意脚本执行。\n"
 },
 {
-  "slug": "nestjs-websocket-realtime-gateway",
-  "title": "NestJS 实时通信：WebSocket Gateway、Socket.io 房间管理与心跳机制",
-  "excerpt": "高并发实时交互架构：构建 WebSocket 网关、订阅/广播事件、处理断线重连与 JWT Socket 握手鉴权。",
-  "category": "NestJS",
-  "date": "2026-08-26",
-  "readTime": "13 min",
+  "slug": "nextjs-realtime-sse-and-websocket-patterns",
+  "title": "Next.js 15 实时通信全解：Server-Sent Events (SSE) 流式传输与外部 WebSocket 解耦架构",
+  "excerpt": "构建现代低延迟实时应用：Route Handlers 实现标准 HTTP/2 SSE 单向流、结合外部长连接网关（Rust/Go）实现百万级高并发实时中枢。",
+  "category": "Next.js",
+  "date": "2026-08-25",
+  "readTime": "17 min",
   "author": "Waitwalker",
   "tags": [
-    "NestJS",
+    "Next.js",
+    "实时通信",
+    "SSE",
     "WebSocket",
-    "Socket.io",
-    "实时通信"
+    "高并发"
   ],
-  "content": "\n## 1. EventsGateway 实现\n\n```typescript\n@WebSocketGateway({ cors: { origin: \"*\" } })\nexport class EventsGateway {\n  @WebSocketServer()\n  server: Server;\n\n  @SubscribeMessage(\"joinRoom\")\n  handleJoinRoom(@MessageBody() room: string, @ConnectedSocket() client: Socket) {\n    client.join(room);\n    this.server.to(room).emit(\"userJoined\", { id: client.id });\n  }\n}\n```\n"
+  "content": "\n## 1. SSE 流式响应与长连接解耦\n\n在 Route Handler 中利用 ReadableStream 输出高效 SSE 单向流，外部独立 Rust 网关承载高并发双向 WebSocket，职责单一且互不干扰。\n"
 },
 {
-  "slug": "nestjs-microservices-and-message-queue",
-  "title": "NestJS 微服务架构：基于 Redis / RabbitMQ 传输器与事件发布订阅",
-  "excerpt": "从单体走向分布式：理解 NestJS Microservices 传输器机制，区分 Request-Response RPC 调用与 Event-based 异步广播。",
-  "category": "NestJS",
+  "slug": "nextjs-animation-framer-motion-gsap",
+  "title": "Next.js 15 顶级交互动效工程：Framer Motion、GSAP 与 App Router 页面转场协同",
+  "excerpt": "打造丝滑 60/120 FPS 视觉体验：React 19 下的动画生命周期、Framer Motion 布局动画 (layoutId)、GSAP ScrollTrigger 与路由平滑转场。",
+  "category": "Next.js",
   "date": "2026-08-26",
-  "readTime": "15 min",
+  "readTime": "16 min",
   "author": "Waitwalker",
   "tags": [
-    "NestJS",
-    "微服务",
-    "RabbitMQ",
-    "分布式"
+    "Next.js",
+    "Framer Motion",
+    "GSAP",
+    "动效工程",
+    "用户体验"
   ],
-  "content": "\n## 1. 混合微服务应用启动\n\n```typescript\nconst app = await NestFactory.create(AppModule);\napp.connectMicroservice<MicroserviceOptions>({\n  transport: Transport.RMQ,\n  options: {\n    urls: [\"amqp://guest:guest@localhost:5672\"],\n    queue: \"order_queue\",\n  },\n});\nawait app.startAllMicroservices();\nawait app.listen(3000);\n```\n"
+  "content": "\n## 1. 现代动效引擎协同\n\n利用 template.tsx 解决 App Router 路由退出动画时序问题，借助 Framer Motion FLIP layoutId 与 GSAP ScrollTrigger 打造殿堂级视觉质感。\n"
 },
 {
-  "slug": "nestjs-task-scheduling-and-bullmq",
-  "title": "NestJS 异步任务调度：Cron 定时任务与 BullMQ 分布式延迟队列",
-  "excerpt": "构建可靠的后台任务处理系统：使用 @nestjs/schedule 实现高精度定时任务，利用 BullMQ + Redis 实现任务重试与削峰填谷。",
-  "category": "NestJS",
-  "date": "2026-08-27",
-  "readTime": "14 min",
+  "slug": "nextjs-file-upload-s3-and-presigned-urls",
+  "title": "Next.js 15 云端大文件直传架构：S3 / R2 预签名 URL、分片断点续传与元数据流",
+  "excerpt": "彻底规避 Node.js 服务端带宽瓶颈：Route Handler 生成 Presigned Upload URLs、客户端直传云存储、分片断点续传与防篡改回调。",
+  "category": "Next.js",
+  "date": "2026-08-26",
+  "readTime": "17 min",
   "author": "Waitwalker",
   "tags": [
-    "NestJS",
-    "BullMQ",
-    "Cron",
-    "异步队列"
+    "Next.js",
+    "文件直传",
+    "AWS S3",
+    "Cloudflare R2",
+    "存储架构"
   ],
-  "content": "\n## 1. BullMQ 队列生产者与消费者\n\n```typescript\n@Injectable()\nexport class AudioService {\n  constructor(@InjectQueue(\"audio\") private audioQueue: Queue) {}\n\n  async transcode(file: string) {\n    await this.audioQueue.add(\"transcode\", { file }, { delay: 5000, attempts: 3 });\n  }\n}\n```\n"
+  "content": "\n## 1. 预签名直传架构\n\n通过 Route Handler 签发 15 分钟临时凭据，客户端通过 XMLHttpRequest 直传 S3/R2，实现零服务端带宽消耗与 Multipart 分片断点续传。\n"
 },
+{
+  "slug": "nextjs-monitoring-opentelemetry-observability",
+  "title": "Next.js 15 全栈可观测性：OpenTelemetry 链路追踪、Sentry 异常捕获与 Prometheus 指标中枢",
+  "excerpt": "生产级性能监控与故障定位：配置 OpenTelemetry SDK、分布式 Trace ID 全链路透传、Core Web Vitals 自动化上报与日志告警。",
+  "category": "Next.js",
+  "date": "2026-08-27",
+  "readTime": "18 min",
+  "author": "Waitwalker",
+  "tags": [
+    "Next.js",
+    "OpenTelemetry",
+    "可观测性",
+    "Sentry",
+    "APM"
+  ],
+  "content": "\n## 1. 全栈立体可观测性\n\n利用 Next.js 15 内置 instrumentation.ts 挂载 OpenTelemetry Node SDK，结合 Sentry 异常录屏与 Prometheus 性能指标大盘，彻底终结黑盒运维。\n"
+},
+
 {
   "slug": "nextjs-app-router-mental-model",
   "title": "Next.js 15 App Router 核心心智模型：路由段、嵌套布局与插槽机制",
@@ -1550,8 +1565,8 @@ fn main() {
 },
 {
   "slug": "fullstack-monorepo-turborepo-nest-next",
-  "title": "全栈 Monorepo 工程化：使用 Turborepo 搭建 Next.js 前端 + NestJS 后端共享代码库",
-  "excerpt": "打造高效全栈研发流水线：共享 TypeScript 类型接口、公共 ESLint/Prettier 配置、高速增量远程缓存与多应用并行开发。",
+  "title": "全栈 Monorepo 工程化：使用 Turborepo 搭建 Next.js 现代化多包与全栈架构",
+  "excerpt": "打造高效全栈研发流水线：共享 TypeScript 类型接口、公共 UI 组件库、高速增量远程缓存与多应用并行开发。",
   "category": "Next.js",
   "date": "2026-08-29",
   "readTime": "16 min",
@@ -1560,10 +1575,10 @@ fn main() {
     "Turborepo",
     "Monorepo",
     "Next.js",
-    "NestJS",
+    "TypeScript",
     "工程化"
   ],
-  "content": "\n## 1. Monorepo 目录结构规划\n\n```\nmy-monorepo/\n ├── apps/\n │    ├── web/        ── Next.js 15 客户端前端\n │    └── api/        ── NestJS 核心后端服务\n ├── packages/\n │    ├── types/      ── 共享 DTO 与数据模型接口\n │    ├── ui/         ── 共享通用 React 组件库\n │    └── config/     ── 共享 tsconfig 与 lint 规则\n └── turbo.json\n```\n"
+  "content": "\n## 1. Monorepo 目录结构规划\n\n```\nmy-monorepo/\n ├── apps/\n │    ├── web/        ── Next.js 15 客户端前端\n │    └── core/       ── 高并发后端与微服务\n ├── packages/\n │    ├── types/      ── 共享数据模型与契约接口\n │    ├── ui/         ── 共享通用 React 组件库\n │    └── config/     ── 共享 tsconfig 与 lint 规则\n └── turbo.json\n```\n"
 }
 ];
 

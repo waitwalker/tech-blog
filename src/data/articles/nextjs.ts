@@ -116,7 +116,7 @@ Action 是带协议的服务端函数。原理是 POST 调用 + 缓存失效，�
 
 ## 工程上怎么用
 
-校验、鉴权、限流和写 Nest 一样。CORS 显式设。Webhook 验签。不要在 Handler 里塞页面 HTML。
+校验、鉴权、限流和传统后端服务一样。CORS 显式设。Webhook 验签。不要在 Handler 里塞页面 HTML。
 
 ## 小结
 
@@ -265,7 +265,7 @@ v4 的原理是「工具类 + 原生变量」。设计系统进 CSS，组件进 
 
 Vitals 是用户时间的三个投影。原理是「哪一段用户在等」。等像素、等 CPU、等布局稳定，对策完全不同。`,
 
-  "fullstack-monorepo-turborepo-nest-next": `Monorepo 不是文件夹搬家，是 **用同一份类型和同一份构建图约束前后端**。Turborepo 负责任务图和缓存，不负责架构。
+  "fullstack-monorepo-turborepo-nest-next": `Monorepo 不是文件夹搬家，是 **用同一份类型和同一份构建图约束全栈与多应用**。Turborepo 负责任务图和缓存，不负责架构。
 
 ## 原理
 
@@ -275,9 +275,9 @@ Turbo 根据 \`pipeline\` 和文件 hash 决定 \`build\` 是否跳过。远程�
 
 ## 工程上怎么用
 
-内部包用 \`workspace:\`。ESLint/tsconfig 下沉到 \`packages/config\`。不要把 apps 互相 import。Nest 和 Next 的运行时分离，只共享类型和少量 isomorphic 函数。
+内部包用 \`workspace:\`。ESLint/tsconfig 下沉到 \`packages/config\`。不要把 apps 互相 import。多端和 Next 的运行时分离，只共享类型和少量 isomorphic 函数。
 
-静态导出的 Next 仍然可以在 monorepo 里和 Nest 并肩，靠 types 包说话，靠 HTTP 通信。
+静态导出的 Next 仍然可以在 monorepo 里和其他后端服务并肩，靠 types 包说话，靠 HTTP 通信。
 
 ## 小结
 

@@ -2,11 +2,10 @@ import React from 'react';
 import Link from 'next/link';
 import { posts } from '@/data/posts';
 import { PostCard } from '@/components/PostCard';
-import { Layers, Code2, Cpu, Globe, Server } from 'lucide-react';
+import { Layers, Code2, Cpu, Globe } from 'lucide-react';
 
 const CATEGORIES = [
   { name: 'Flutter' as const, icon: Code2, desc: '跨端高性能渲染引擎、Impeller 架构与状态管理实战' },
-  { name: 'NestJS' as const, icon: Server, desc: '企业级 Node.js 渐进式服务端架构、IoC 依赖注入与微服务' },
   { name: 'Next.js' as const, icon: Globe, desc: 'React 19、App Router、RSC 与现代全栈 Web 架构' },
   { name: 'Rust' as const, icon: Cpu, desc: '内存安全系统级编程、所有权借用与 Tokio 异步高并发' },
 ];
@@ -22,7 +21,7 @@ export default function CategoriesPage() {
         <p className="text-slate-400 text-sm mt-2">按专题阅读完整正文。Markdown 标题、列表与代码块会按文章格式渲染。</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {CATEGORIES.map((cat) => {
           const Icon = cat.icon;
           const count = posts.filter((p) => p.category === cat.name).length;

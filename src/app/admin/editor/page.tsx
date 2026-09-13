@@ -159,7 +159,6 @@ export default function EditorPage() {
             <option value="rust">Rust 架构与底层核心</option>
             <option value="flutter">Flutter 渲染引擎与混合架构</option>
             <option value="nextjs">Next.js 15 全栈与服务端组件</option>
-            <option value="nestjs">NestJS 高并发企业级架构</option>
           </select>
         </div>
         <div>

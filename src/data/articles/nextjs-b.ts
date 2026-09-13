@@ -915,7 +915,7 @@ SDK：一份 \`paths.ts\` 描述路由和方法，映射出 \`client.get('/users
 
 非法状态不可表示，优先于工具类型炫技。能用联合解决的，不要 \`infer\`。能用品牌解决的，不要 \`string\` 加注释。
 
-Next / Nest 的 DTO：前端不要 \`interface\` 一份、后端 \`class\` 一份还字段不同。共享 \`packages/types\`，用类型而不是 class（class 在前端多余）。运行时校验放 Nest 的 pipe 和前端的表单，schema 能共享就共享，不能共享就至少共享字段名和联合。Monorepo 那篇会把构建图接上。
+前后端共享的 DTO：前端不要 \`interface\` 一份、后端 \`class\` 一份还字段不同。共享 \`packages/types\`，用类型而不是 class（class 在前端多余）。运行时校验放 Nest 的 pipe 和前端的表单，schema 能共享就共享，不能共享就至少共享字段名和联合。Monorepo 那篇会把构建图接上。
 
 ## 12. 小结
 
@@ -1322,7 +1322,7 @@ LCP、INP、CLS 是三种等待：像素、CPU 到下一帧、布局稳定。测
 
 \`\`\`
 apps/web          Next.js
-apps/api          NestJS
+apps/core         Node/Rust 服务端
 packages/types    DTO、错误码、共享联合
 packages/ui       React 组件，仅 web 用
 packages/config   tsconfig / eslint
@@ -1333,7 +1333,7 @@ packages/db       Prisma schema 与客户端，仅 api 用
 
 这张图要写进 ESLint \`import/no-restricted-paths\` 或 \`dependency-cruiser\`，不要写进 wiki。wiki 三个月后必破。CI 对非法 import 红，比 code review 认人稳。
 
-「先放一起以后再拆」会变成永远的上帝包 \`packages/common\`。common 里既有日期函数又有 Nest 装饰器又有 React hook，任何一边的构建都会被另一边拖下水。按运行时切包：isomorphic 纯函数一个包，React 一个，Nest 一个，Node-only 一个。
+「先放一起以后再拆」会变成永远的上帝包 \`packages/common\`。common 里既有日期函数又有 服务端装饰器又有 React hook，任何一边的构建都会被另一边拖下水。按运行时切包：isomorphic 纯函数一个包，React 一个，Nest 一个，Node-only 一个。
 
 ## 2. 任务图：Turbo 缓存的是哈希，不是目录
 
@@ -1406,11 +1406,11 @@ pnpm / yarn / bun 的 \`workspace:*\` 让内部包不走 registry 版本号。ap
 }
 \`\`\`
 
-不要 \`export *\` 把内部文件全部倒出。公开面越小，Nest 改一个私有 helper 越不会逼 web 重编。公开面就是契约，列在 \`index.ts\`。
+不要 \`export *\` 把内部文件全部倒出。公开面越小，后端改一个私有 helper 越不会逼 web 重编。公开面就是契约，列在 \`index.ts\`。
 
 ## 4. 类型包：契约怎么演进
 
-\`packages/types\` 放：请求/响应 DTO、错误码联合、分页形状、WebSocket 事件名。不放：React 组件、Nest 装饰器、Prisma 生成物（生成物带运行时）。
+\`packages/types\` 放：请求/响应 DTO、错误码联合、分页形状、WebSocket 事件名。不放：React 组件、服务端装饰器、Prisma 生成物（生成物带运行时）。
 
 \`\`\`ts
 export type ProductDto = {
@@ -1436,21 +1436,21 @@ export type ApiError = {
 
 Prisma 的 \`Product\` 类型不要直接当 \`ProductDto\`。库表有 \`passwordHash\`、有内部 flag。映射函数放 \`packages/db\` 或 api 层，输出 \`ProductDto\`。web 只认识 DTO。泄漏 Prisma 类型进 web，等于泄漏表结构进前端包，下一次 \`include\` 一加，bundle 和契约一起脏。
 
-运行时校验：Nest 用 class + \`class-validator\` 或用 zod。若用 zod，schema 放 \`packages/types\`，\`z.infer\` 当类型，Nest pipe 和 Next 表单共用。不要 TS 接口一份、zod 一份、class 一份。三份里一定有一份先漂。
+运行时校验：后端若用 class + \`class-validator\` 或用 zod。若用 zod，schema 放 \`packages/types\`，\`z.infer\` 当类型，Nest pipe 和 Next 表单共用。不要 TS 接口一份、zod 一份、class 一份。三份里一定有一份先漂。
 
-## 5. Nest 和 Next 只共享什么
+## 5. 多应用与 Next.js 只共享什么
 
-共享：类型、错误码、少量 isomorphic 纯函数（钱的格式化、slug 规则、时区转换——确认没有 \`window\` / \`fs\`）。不共享：Nest 模块、PrismaClient、React 组件、环境变量加载方式、日志对象。
+共享：类型、错误码、少量 isomorphic 纯函数（钱的格式化、slug 规则、时区转换——确认没有 \`window\` / \`fs\`）。不共享：后端独立模块、PrismaClient、React 组件、环境变量加载方式、日志对象。
 
-鉴权：Next 的 Server Action 和 Nest 的 Guard 用同一套 JWT 语义，但验证库各调各的，密钥来自各进程的 env。不要从 web import Nest 的 \`AuthGuard\`。cookie 名、header 名放 types 当常量。
+鉴权：Next 的 Server Action 和 后端微服务的 Guard 用同一套 JWT 语义，但验证库各调各的，密钥来自各进程的 env。不要从 web import 后端服务的 \`AuthGuard\`。cookie 名、header 名放 types 当常量。
 
 \`\`\`ts
 export const AUTH_COOKIE = "acme_session" as const;
 \`\`\`
 
-通信：浏览器 → Next（RSC/BFF）→ Nest，或浏览器 → Nest。两种都行，不要两种对同一资源混用还字段不同。BFF 在 Next 的 Route Handler 里聚合，类型仍来自 types 包。不要在 BFF 里发明第四份 DTO。
+通信：浏览器 → Next（RSC/BFF）→ 后端服务，或浏览器 → 后端服务。两种都行，不要两种对同一资源混用还字段不同。BFF 在 Next 的 Route Handler 里聚合，类型仍来自 types 包。不要在 BFF 里发明第四份 DTO。
 
-静态导出的 Next 仍然可以和 Nest 并肩：构建时不碰 Nest，运行时只靠 URL。types 包在构建期约束前端，不需要 Nest 进程活着。CI 仍要两边 build，免得 DTO 只在一边编过。
+静态导出的 Next 仍然可以和其他后端服务并肩：构建时不碰后端，运行时只靠 URL。types 包在构建期约束前端，不需要后端服务进程活着。CI 仍要两边 build，免得 DTO 只在一边编过。
 
 ## 6. 配置下沉，应用不复制
 
@@ -1496,7 +1496,7 @@ Prisma schema 一份。\`prisma generate\` 产出客户端，挂在 \`db\` 包�
 | 多仓 + 发 npm | 独立版本 | DTO 漂、协调成本 |
 | Turbo 远程缓存 | CI 墙钟 | key 设计、投毒面 |
 | 内部包走 dist | 运行时清晰 | 每次改 types 先 build |
-| 内部包走源码 | 改了就看到 | Nest/Next 编译器行为不一致 |
+| 内部包走源码 | 改了就看到 | 多包编译器行为不一致 |
 | 上帝 \`common\` | 短期快 | 运行时互相污染 |
 
 默认：Monorepo + 内部包 dist + Turbo + 非法 import 门禁。团队两人、项目三个月，可以先单仓单包；图开始慢、类型开始漂，再切，不要在第一天发明 12 个包。
@@ -1527,6 +1527,6 @@ Cache 那篇的 tag、Action 那篇的 DTO、状态那篇的 Query key，字段�
 
 ## 12. 小结
 
-Monorepo 的原理是一份依赖图、一份类型契约、一份可哈希的任务。Turbo 加速图，不规定图。Nest 和 Next 共享 DTO 和纯函数，不共享运行时对象。缓存 key 必须含改变制品的环境；outputs 必须含运行真正需要的文件。非法 import 用机器拦。演进 DTO 时把删改当 breaking，在同一次提交里改完两边。图、契约、缓存，三件都写进 CI，才算从「两个项目躺在同一个磁盘上」变成全栈工程。
+Monorepo 的原理是一份依赖图、一份类型契约、一份可哈希的任务。Turbo 加速图，不规定图。前后端应用共享 DTO 和纯函数，不共享运行时对象。缓存 key 必须含改变制品的环境；outputs 必须含运行真正需要的文件。非法 import 用机器拦。演进 DTO 时把删改当 breaking，在同一次提交里改完两边。图、契约、缓存，三件都写进 CI，才算从「两个项目躺在同一个磁盘上」变成全栈工程。
 `,
 };

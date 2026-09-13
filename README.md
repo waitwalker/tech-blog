@@ -12,7 +12,7 @@ A modern, high-performance tech blog and geek operations management hub built wi
 
 ## ✨ Features
 
-- **Geek Tech Articles**: 70+ in-depth architecture articles covering Rust, Flutter, NestJS, and Next.js.
+- **Geek Tech Articles**: 70+ in-depth architecture articles covering Rust, Flutter, and Next.js 15.
 - **Strict Auth Guard**: Strict client and server-side JWT authentication preventing unauthorized access to management pages.
 - **Global Nodes Hub**: Visual dashboard for monitoring, filtering, and latency testing of global nodes with real-time transport security audit tags.
 - **Cloud Offline Transfer**: High-speed video/media transfer pipeline dashboard with embedded live preview and dual progress meters.
