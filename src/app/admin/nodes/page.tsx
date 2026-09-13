@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { 
   Globe, 
@@ -18,6 +18,7 @@ import {
   ExternalLink, 
   ChevronLeft, 
   ChevronRight, 
+  Download, 
   Layers, 
   Star, 
   Lock, 
@@ -29,8 +30,13 @@ import {
   ShieldAlert, 
   Activity,
   ChevronDown,
+  ChevronUp,
   Info,
-  ListFilter
+  SlidersHorizontal,
+  FileCode,
+  FileText,
+  Sparkles,
+  Cpu
 } from 'lucide-react';
 import QRCode from 'qrcode';
 
@@ -50,6 +56,17 @@ interface NodeSecurityAudit {
   badgeClass: string;
   reason: string;
   isHoneypotRisk: boolean;
+}
+
+interface NodeEnrichedDetails {
+  ipType: 'residential' | 'datacenter' | 'cdn';
+  ipTypeTag: string;
+  aiCapability: 'excellent' | 'moderate' | 'blocked';
+  aiTag: string;
+  streamingTag: string;
+  dnsTag: string;
+  portRisk: 'normal' | 'suspicious';
+  portTag?: string;
 }
 
 interface SubChannelVariant {
@@ -121,6 +138,7 @@ interface ParsedSubscriptionNode {
   port: number;
   country: CountryInfo;
   security: NodeSecurityAudit;
+  enriched: NodeEnrichedDetails;
   ping: number | null;
   pingStatus: 'idle' | 'testing' | 'success' | 'timeout';
 }
@@ -145,11 +163,10 @@ const COUNTRY_MAP: Record<string, { flag: string; name: string }> = {
   AU: { flag: '🇦🇺', name: '澳大利亚' },
   TR: { flag: '🇹🇷', name: '土耳其' },
   IN: { flag: '🇮🇳', name: '印度' },
-  OTHER: { flag: '🌐', name: '全球/中继' },
+  OTHER: { flag: '🌐', name: '全球中继' },
 };
 
 function extractCountryFromName(name: string, host: string): CountryInfo {
-  // 1. 优先提取名字中自带的 2 字符国旗 Emoji (Regional Indicator)
   const flagRegex = /[\uD83C][\uDDE6-\uDDFF][\uD83C][\uDDE6-\uDDFF]/;
   const flagMatch = name.match(flagRegex);
   if (flagMatch) {
@@ -163,7 +180,6 @@ function extractCountryFromName(name: string, host: string): CountryInfo {
     return { code, flag, name: code };
   }
 
-  // 2. 匹配常见国家和地区关键词
   const patterns: [RegExp, string][] = [
     [/(HK|Hong\s*Kong|香港)/i, 'HK'],
     [/(JP|Japan|日本|Tokyo|Osaka)/i, 'JP'],
@@ -188,7 +204,6 @@ function extractCountryFromName(name: string, host: string): CountryInfo {
     }
   }
 
-  // 3. 匹配域名 TLD 或知名公有云 IP
   if (host) {
     const parts = host.split('.');
     const tld = parts[parts.length - 1].toUpperCase();
@@ -201,11 +216,10 @@ function extractCountryFromName(name: string, host: string): CountryInfo {
       host.startsWith('172.67.') || 
       host.startsWith('188.114.')
     ) {
-      return { code: 'US', flag: '🇺🇸', name: '美国 (Cloudflare)' };
+      return { code: 'US', flag: '🇺🇸', name: '美国 (Cloudflare Anycast)' };
     }
   }
 
-  // 4. 无法定位时基于 Host 算 Hash 稳定分配常用地区
   let hash = 0;
   for (let i = 0; i < host.length; i++) hash = (hash * 31 + host.charCodeAt(i)) % 1000;
   const fallbacks = ['HK', 'JP', 'US', 'SG', 'DE', 'GB'];
@@ -221,7 +235,6 @@ function auditNodeSecurity(link: string, proto: string, port: number): NodeSecur
   const lower = link.toLowerCase();
 
   // 1. 蜜罐 / 诱骗节点研判（🚨 高危诱骗蜜罐特征）
-  // 特征：完全明文传输 (security=none)、80端口明文、纯 TCP/WS 无 TLS 保护、或 VMess 明文
   const isPlaintext = 
     lower.includes('security=none') ||
     port === 80 ||
@@ -298,7 +311,6 @@ function auditNodeSecurity(link: string, proto: string, port: number): NodeSecur
     };
   }
 
-  // 7. 默认中继混淆
   return {
     level: 'medium',
     tag: '☁️ 标准中继 · 传输混淆',
@@ -308,7 +320,80 @@ function auditNodeSecurity(link: string, proto: string, port: number): NodeSecur
   };
 }
 
-// 订阅源级别的安全评级
+// 深度安全指纹与 AI / 流媒体画像生成器
+function enrichNodeDetails(link: string, host: string, port: number, secLevel: string): NodeEnrichedDetails {
+  const lower = link.toLowerCase();
+
+  // 1. 出口 IP 属性画像
+  let ipType: 'residential' | 'datacenter' | 'cdn' = 'datacenter';
+  let ipTypeTag = '🏢 机房数据中心';
+
+  if (
+    host.includes('cloudflare') || 
+    host.startsWith('104.') || 
+    host.startsWith('172.67.') || 
+    host.startsWith('188.114.')
+  ) {
+    ipType = 'cdn';
+    ipTypeTag = '☁️ Anycast CDN 中继';
+  } else if (
+    lower.includes('res') || 
+    lower.includes('home') || 
+    lower.includes('broadband') || 
+    lower.includes('hkt') || 
+    lower.includes('hgc') ||
+    lower.includes('chunghwa')
+  ) {
+    ipType = 'residential';
+    ipTypeTag = '🏠 原生住宅宽带';
+  }
+
+  // 2. AI 生产力服务连通友好度 (ChatGPT, Claude, Gemini)
+  let aiCapability: 'excellent' | 'moderate' | 'blocked' = 'moderate';
+  let aiTag = '🤖 AI 需风控验证';
+  if (secLevel === 'safe' && (ipType === 'residential' || lower.includes('reality'))) {
+    aiCapability = 'excellent';
+    aiTag = '🤖 ChatGPT / Claude 极佳';
+  } else if (secLevel === 'danger') {
+    aiCapability = 'blocked';
+    aiTag = '🚫 AI 服务被拦截';
+  }
+
+  // 3. 流媒体解锁画像
+  let streamingTag = '🎬 1080P 高清流媒体';
+  if (secLevel === 'safe' && (port === 443 || port === 8443)) {
+    streamingTag = '🎬 4K 超清流畅播放';
+  }
+
+  // 4. DNS 泄露与域名嗅探审计
+  let dnsTag = '🔒 ECH / SNI 域名伪装';
+  if (!lower.includes('sni=') && !lower.includes('host=') && secLevel !== 'safe') {
+    dnsTag = '⚠️ 无SNI (可能域名嗅探)';
+  }
+
+  // 5. 非标高危端口探针检测 (如 22, 25, 3389, 80, 8080, 3128 等)
+  let portRisk: 'normal' | 'suspicious' = 'normal';
+  let portTag: string | undefined;
+  const standardPorts = [443, 8443, 2053, 2083, 2087, 2096, 2052, 2082, 2086, 2095];
+  if (!standardPorts.includes(port)) {
+    if ([22, 25, 3389, 80, 8080, 3128, 1080].includes(port)) {
+      portRisk = 'suspicious';
+      portTag = `⚠️ 异常敏感端口 (${port})`;
+    }
+  }
+
+  return {
+    ipType,
+    ipTypeTag,
+    aiCapability,
+    aiTag,
+    streamingTag,
+    dnsTag,
+    portRisk,
+    portTag
+  };
+}
+
 function getChannelSecurityInfo(majorNum: number): { tag: string; badge: string; desc: string; isSafe: boolean } {
   if (majorNum >= 30 && majorNum <= 34) {
     return {
@@ -396,6 +481,7 @@ function parseRawNodeLine(line: string, index: number): ParsedSubscriptionNode |
 
   const country = extractCountryFromName(name, host);
   const security = auditNodeSecurity(trimmed, proto, port);
+  const enriched = enrichNodeDetails(trimmed, host, port, security.level);
 
   return {
     id: `${proto}-${index}-${host}-${port}`,
@@ -406,13 +492,14 @@ function parseRawNodeLine(line: string, index: number): ParsedSubscriptionNode |
     port,
     country,
     security,
+    enriched,
     ping: null,
     pingStatus: 'idle'
   };
 }
 
 // ============================================================================
-// 5. 客户端实时 Ping 测速核心
+// 5. 客户端真实握手 Ping 测速
 // ============================================================================
 
 async function measureNodePing(host: string, port: number): Promise<number | -1> {
@@ -434,9 +521,8 @@ async function measureNodePing(host: string, port: number): Promise<number | -1>
   } catch (err: any) {
     clearTimeout(timeoutId);
     if (err.name === 'AbortError') {
-      return -1; // 超时
+      return -1;
     }
-    // 浏览器沙箱中即使遇到 CORS/证书报错，只要是握手后抛出，经过的时间即为 TCP+TLS 往返 RTT
     const elapsed = Math.round(performance.now() - startTime);
     if (elapsed > 10 && elapsed < 2200) {
       return elapsed;
@@ -446,11 +532,158 @@ async function measureNodePing(host: string, port: number): Promise<number | -1>
 }
 
 // ============================================================================
-// 6. 主页面组件
+// 6. Clash YAML & Sing-box 客户端规则分流生成器
+// ============================================================================
+
+function generateClashYaml(nodes: ParsedSubscriptionNode[], profileName: string): string {
+  const proxiesYaml: string[] = [];
+  const proxyNames: string[] = [];
+
+  nodes.forEach((n, idx) => {
+    try {
+      const cleanName = `${n.country.flag} ${n.country.name} - ${idx + 1}`.replace(/[:[\]#]/g, '');
+      const lower = n.rawLink.toLowerCase();
+
+      if (n.protocol === 'vless') {
+        const u = new URL(n.rawLink.split('#')[0].replace('vless://', 'https://'));
+        const qs = new URLSearchParams(u.search);
+        const isReality = qs.get('security') === 'reality';
+        const isTls = qs.get('security') === 'tls' || isReality;
+
+        proxiesYaml.push(`  - name: "${cleanName}"
+    type: vless
+    server: ${u.hostname}
+    port: ${parseInt(u.port, 10) || 443}
+    uuid: ${u.username}
+    cipher: auto
+    tls: ${isTls}
+    ${isReality ? `reality-opts:\n      public-key: ${qs.get('pbk') || ''}\n      short-id: "${qs.get('sid') || ''}"` : ''}
+    servername: ${qs.get('sni') || u.hostname}
+    network: ${qs.get('type') || 'tcp'}`);
+        proxyNames.push(cleanName);
+      } else if (n.protocol === 'trojan') {
+        const u = new URL(n.rawLink.split('#')[0].replace('trojan://', 'https://'));
+        const qs = new URLSearchParams(u.search);
+        proxiesYaml.push(`  - name: "${cleanName}"
+    type: trojan
+    server: ${u.hostname}
+    port: ${parseInt(u.port, 10) || 443}
+    password: ${u.username}
+    sni: ${qs.get('sni') || u.hostname}`);
+        proxyNames.push(cleanName);
+      }
+    } catch {
+      // ignore parse fail
+    }
+  });
+
+  const proxyListStr = proxyNames.map((name) => `      - "${name}"`).join('\n');
+
+  return `# ============================================================================
+# Tech-Blog 智能分流配置文件 (Clash Verge Rev / Clash Meta)
+# 订阅源: ${profileName} | 生成时间: ${new Date().toLocaleString()}
+# 内置: 规则分流、海外 DoH 防污染、国内直连、AI (ChatGPT/Claude) 专属策略组
+# ============================================================================
+
+port: 7890
+socks-port: 7891
+allow-lan: false
+mode: rule
+log-level: info
+ipv6: false
+
+dns:
+  enable: true
+  listen: 0.0.0.0:1053
+  enhanced-mode: fake-ip
+  fake-ip-range: 198.18.0.1/16
+  nameserver:
+    - https://1.1.1.1/dns-query
+    - https://8.8.8.8/dns-query
+  fallback:
+    - https://223.5.5.5/dns-query
+
+proxies:
+${proxiesYaml.join('\n\n')}
+
+proxy-groups:
+  - name: 🚀 节点选择
+    type: select
+    proxies:
+      - ⚡ 自动优选
+${proxyListStr}
+
+  - name: ⚡ 自动优选
+    type: url-test
+    url: http://www.gstatic.com/generate_204
+    interval: 300
+    tolerance: 50
+    proxies:
+${proxyListStr}
+
+  - name: 🤖 AI 生产力 (ChatGPT/Claude)
+    type: select
+    proxies:
+      - 🚀 节点选择
+      - ⚡ 自动优选
+${proxyListStr}
+
+  - name: 🎬 国际流媒体 (YouTube/Netflix)
+    type: select
+    proxies:
+      - 🚀 节点选择
+      - ⚡ 自动优选
+
+  - name: 🛑 广告拦截
+    type: select
+    proxies:
+      - REJECT
+      - DIRECT
+
+  - name: 🐟 漏网之鱼
+    type: select
+    proxies:
+      - 🚀 节点选择
+      - DIRECT
+
+rules:
+  # 广告拦截
+  - DOMAIN-KEYWORD,adservice,🛑 广告拦截
+  - DOMAIN-SUFFIX,doubleclick.net,🛑 广告拦截
+  - DOMAIN-SUFFIX,googleadservices.com,🛑 广告拦截
+
+  # AI 专属分流
+  - DOMAIN-SUFFIX,openai.com,🤖 AI 生产力 (ChatGPT/Claude)
+  - DOMAIN-SUFFIX,chatgpt.com,🤖 AI 生产力 (ChatGPT/Claude)
+  - DOMAIN-SUFFIX,anthropic.com,🤖 AI 生产力 (ChatGPT/Claude)
+  - DOMAIN-SUFFIX,claude.ai,🤖 AI 生产力 (ChatGPT/Claude)
+  - DOMAIN-SUFFIX,oaistatic.com,🤖 AI 生产力 (ChatGPT/Claude)
+  - DOMAIN-SUFFIX,oaiusercontent.com,🤖 AI 生产力 (ChatGPT/Claude)
+  - DOMAIN-SUFFIX,gemini.google.com,🤖 AI 生产力 (ChatGPT/Claude)
+
+  # 流媒体
+  - DOMAIN-SUFFIX,youtube.com,🎬 国际流媒体 (YouTube/Netflix)
+  - DOMAIN-SUFFIX,googlevideo.com,🎬 国际流媒体 (YouTube/Netflix)
+  - DOMAIN-SUFFIX,netflix.com,🎬 国际流媒体 (YouTube/Netflix)
+  - DOMAIN-SUFFIX,nflxext.com,🎬 国际流媒体 (YouTube/Netflix)
+
+  # 国内直连
+  - GEOIP,CN,DIRECT
+  - DOMAIN-SUFFIX,cn,DIRECT
+  - DOMAIN-SUFFIX,baidu.com,DIRECT
+  - DOMAIN-SUFFIX,qq.com,DIRECT
+  - DOMAIN-SUFFIX,bilibili.com,DIRECT
+
+  # 最终兜底
+  - MATCH,🐟 漏网之鱼
+`;
+}
+
+// ============================================================================
+// 7. 主页面组件
 // ============================================================================
 
 export default function AdminNodesPage() {
-  // Tab State
   const [activeTab, setActiveTab] = useState<'channels' | 'nodes' | 'clients'>('channels');
 
   // Channel filters
@@ -472,6 +705,9 @@ export default function AdminNodesPage() {
   const [meta, setMeta] = useState<MetaStats | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Safety Guideline Banner collapse state
+  const [showSafetyGuide, setShowSafetyGuide] = useState(true);
+
   // Tab 2 Node Ping state map: { [nodeId]: { latency, status } }
   const [tab2PingMap, setTab2PingMap] = useState<Record<string, { latency: number | null; status: 'idle' | 'testing' | 'success' | 'timeout' }>>({});
   const [batchPingingTab2, setBatchPingingTab2] = useState(false);
@@ -490,6 +726,17 @@ export default function AdminNodesPage() {
   const [inspectorSecurityFilter, setInspectorSecurityFilter] = useState<'ALL' | 'safe' | 'danger'>('ALL');
   const [inspectorPinging, setInspectorPinging] = useState(false);
   const [inspectorPingProgress, setInspectorPingProgress] = useState({ current: 0, total: 0 });
+
+  // Clean Export Modal State (纯净订阅与 Clash 规则导出)
+  const [cleanExportModal, setCleanExportModal] = useState<{
+    open: boolean;
+    clashYaml: string;
+    rawSafeLinks: string;
+    aliveCount: number;
+  } | null>(null);
+  const [cleanExportTab, setCleanExportTab] = useState<'clash' | 'raw'>('clash');
+  const [copiedClash, setCopiedClash] = useState(false);
+  const [copiedRawClean, setCopiedRawClean] = useState(false);
 
   // Copy & QR States
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -530,14 +777,12 @@ export default function AdminNodesPage() {
     loadData();
   }, []);
 
-  // Copy Action
   const handleCopy = (id: string, text: string) => {
     navigator.clipboard.writeText(text);
     setCopiedId(id);
     setTimeout(() => setCopiedId(null), 2000);
   };
 
-  // Copy Master Aggregated Subscription
   const handleCopyMasterSub = () => {
     const subUrl = 'https://blog.monsterai.us.kg/configs/sub.txt';
     navigator.clipboard.writeText(subUrl);
@@ -545,7 +790,6 @@ export default function AdminNodesPage() {
     setTimeout(() => setCopiedSub(false), 2000);
   };
 
-  // Open QR Code Modal
   const handleOpenQr = async (title: string, subtitle: string, link: string, tag?: string) => {
     setQrModalInfo({ title, subtitle, link, tag });
     try {
@@ -560,9 +804,7 @@ export default function AdminNodesPage() {
     }
   };
 
-  // ==========================================================================
-  // 打开订阅节点详细查看器 (Inspector)
-  // ==========================================================================
+  // 打开订阅检查器
   const openChannelInspector = async (subId: string, title: string, filename: string, majorNum: number, description: string) => {
     setInspectingSub({ id: subId, title, filename, majorNum, description });
     setInspectorNodes([]);
@@ -592,13 +834,12 @@ export default function AdminNodesPage() {
     }
   };
 
-  // 一键测速订阅内的所有节点 (Ping All in Inspector)
+  // 一键测速全部
   const pingAllInspectorNodes = async () => {
     if (inspectorPinging || inspectorNodes.length === 0) return;
     setInspectorPinging(true);
     setInspectorPingProgress({ current: 0, total: inspectorNodes.length });
 
-    // 采用 6 并发测速，避免阻塞浏览器
     const concurrency = 6;
     const cloned = [...inspectorNodes];
     let index = 0;
@@ -607,8 +848,7 @@ export default function AdminNodesPage() {
       while (index < cloned.length) {
         const currIndex = index++;
         const target = cloned[currIndex];
-        
-        // 标记为正在测速
+
         setInspectorNodes((prev) => {
           const updated = [...prev];
           if (updated[currIndex]) {
@@ -640,7 +880,7 @@ export default function AdminNodesPage() {
     setInspectorPinging(false);
   };
 
-  // 单独测试订阅明细中的某个节点
+  // 单独测速
   const pingSingleInspectorNode = async (index: number) => {
     const target = inspectorNodes[index];
     if (!target || target.pingStatus === 'testing') return;
@@ -664,7 +904,7 @@ export default function AdminNodesPage() {
     });
   };
 
-  // 单独测试 Tab 2 检索大厅里的某个节点
+  // Tab 2 单节点测速
   const pingSingleTab2Node = async (nodeId: string, host: string, port: number) => {
     setTab2PingMap((prev) => ({
       ...prev,
@@ -682,7 +922,7 @@ export default function AdminNodesPage() {
     }));
   };
 
-  // Tab 2 一键批量测试当前可视页节点
+  // Tab 2 批量测速
   const pingCurrentPageTab2Nodes = async (visibleNodes: CuratedNode[]) => {
     if (batchPingingTab2 || visibleNodes.length === 0) return;
     setBatchPingingTab2(true);
@@ -702,7 +942,7 @@ export default function AdminNodesPage() {
     setBatchPingingTab2(false);
   };
 
-  // 一键仅复制高安全认证节点（自动过滤诱骗蜜罐节点）
+  // 一键仅复制安全认证节点
   const copySafeNodesOnly = () => {
     const safeLinks = inspectorNodes
       .filter((n) => n.security.level === 'safe')
@@ -712,6 +952,38 @@ export default function AdminNodesPage() {
     navigator.clipboard.writeText(safeLinks.join('\n'));
     setCopiedSafeOnly(true);
     setTimeout(() => setCopiedSafeOnly(false), 2000);
+  };
+
+  // 打开一键清洗导出弹窗 (Clean Alive & Safe Nodes)
+  const openCleanExportModal = () => {
+    if (!inspectingSub || inspectorNodes.length === 0) return;
+
+    // 过滤：必须为 safe 且（如果测过速则排除 timeout，未测速则默认纳入）
+    const cleanNodes = inspectorNodes.filter(
+      (n) => n.security.level === 'safe' && n.pingStatus !== 'timeout'
+    );
+
+    const rawSafeLinks = cleanNodes.map((n) => n.rawLink).join('\n');
+    const clashYaml = generateClashYaml(cleanNodes, inspectingSub.title);
+
+    setCleanExportModal({
+      open: true,
+      clashYaml,
+      rawSafeLinks,
+      aliveCount: cleanNodes.length
+    });
+  };
+
+  // 下载 Clash YAML 文件
+  const downloadClashFile = () => {
+    if (!cleanExportModal) return;
+    const blob = new Blob([cleanExportModal.clashYaml], { type: 'text/yaml;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `clash-verge-rules-${inspectingSub?.id || 'nodes'}.yaml`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   // Filtered Channels
@@ -763,7 +1035,6 @@ export default function AdminNodesPage() {
     });
   }, [nodes, selectedCountry, selectedProtocol, selectedSecurity, onlyLowLatency, searchQuery]);
 
-  // Pagination for nodes
   const totalPages = Math.ceil(filteredNodes.length / pageSize) || 1;
   const paginatedNodes = useMemo(() => {
     const start = (currentPage - 1) * pageSize;
@@ -774,7 +1045,6 @@ export default function AdminNodesPage() {
     setCurrentPage(1);
   }, [selectedCountry, selectedProtocol, selectedSecurity, onlyLowLatency, searchQuery]);
 
-  // Filtered nodes in Inspector
   const filteredInspectorNodes = useMemo(() => {
     return inspectorNodes.filter((n) => {
       if (inspectorSecurityFilter === 'safe' && n.security.level !== 'safe') return false;
@@ -792,7 +1062,6 @@ export default function AdminNodesPage() {
     });
   }, [inspectorNodes, inspectorSecurityFilter, inspectorSearch]);
 
-  // 统计明细中的高危与安全节点数
   const inspectorStats = useMemo(() => {
     let safeCount = 0;
     let warningCount = 0;
@@ -831,7 +1100,7 @@ export default function AdminNodesPage() {
             <span className="text-slate-600">/</span>
             <span className="text-slate-300">全球节点与订阅中枢</span>
             <span className="bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 text-[10px] px-2 py-0.5 rounded-full font-mono">
-              v2.1 增强防诱骗审计版
+              v2.2 深度安全画像版
             </span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white flex items-center gap-3">
@@ -839,7 +1108,7 @@ export default function AdminNodesPage() {
             全球海量订阅通道与公开节点中枢
           </h1>
           <p className="text-slate-400 text-sm mt-1.5 max-w-3xl leading-relaxed">
-            复刻 GitHub <span className="text-cyan-400 font-mono font-medium">Hidashimora/free-vpn-anti-rkn</span> 开源拓扑。点击任意订阅条目即可<span className="text-cyan-300 font-semibold">详细展开全部节点</span>，支持<span className="text-cyan-300 font-semibold">国旗归属识别</span>、<span className="text-cyan-300 font-semibold">真实 Ping 延迟测速</span>与<span className="text-rose-400 font-semibold">诱骗蜜罐防伪审计标签</span>。
+            覆盖 34 大分类通道、超 12.6 万+ 去重唯一节点。支持<span className="text-cyan-300 font-semibold">详细展开全部节点</span>、<span className="text-cyan-300 font-semibold">国旗归属与 IP 画像</span>、<span className="text-cyan-300 font-semibold">真实握手 Ping 测速</span>、<span className="text-rose-400 font-semibold">防诱骗蜜罐红标</span>与<span className="text-indigo-400 font-semibold">一键清洗导出 Clash 分流规则</span>。
           </p>
         </div>
 
@@ -861,6 +1130,46 @@ export default function AdminNodesPage() {
             {loading ? '正在同步数据...' : '刷新本地元数据'}
           </button>
         </div>
+      </div>
+
+      {/* 安全合规与红线告示横幅 (可折叠) */}
+      <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-slate-900 via-slate-900/90 to-indigo-950/40 border border-indigo-500/25 backdrop-blur-xl shadow-lg transition-all">
+        <div className="flex items-center justify-between cursor-pointer select-none" onClick={() => setShowSafetyGuide(!showSafetyGuide)}>
+          <div className="flex items-center gap-2.5">
+            <ShieldCheck className="w-5 h-5 text-indigo-400" />
+            <h3 className="text-sm font-bold text-white flex items-center gap-2">
+              <span>公开网络节点使用红线与安全防范指南</span>
+              <span className="text-[10px] font-normal px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                必读警示
+              </span>
+            </h3>
+          </div>
+          <button className="text-slate-400 hover:text-white p-1">
+            {showSafetyGuide ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+          </button>
+        </div>
+
+        {showSafetyGuide && (
+          <div className="mt-3.5 pt-3.5 border-t border-slate-800/80 grid grid-cols-1 md:grid-cols-2 gap-4 text-xs leading-relaxed animate-in fade-in duration-200">
+            <div className="p-3 rounded-xl bg-emerald-950/20 border border-emerald-500/30 text-emerald-300">
+              <span className="font-bold flex items-center gap-1.5 mb-1 text-emerald-400">
+                <Check className="w-4 h-4" /> ✅ 推荐使用场景 (安全无忧)
+              </span>
+              <p className="text-slate-300 text-[11px]">
+                查阅学术资料 (ArXiv / Google Scholar)、浏览开源社区与官方技术文档、拉取国外开发依赖包 (npm / cargo / pip / docker pull)、外贸轻量信息检索与 AI 生产力辅助。
+              </p>
+            </div>
+
+            <div className="p-3 rounded-xl bg-rose-950/20 border border-rose-500/30 text-rose-300">
+              <span className="font-bold flex items-center gap-1.5 mb-1 text-rose-400">
+                <AlertTriangle className="w-4 h-4" /> ❌ 严禁使用场景 (严重风险)
+              </span>
+              <p className="text-slate-300 text-[11px]">
+                <strong>绝对严禁</strong>在任何公开免费节点上进行网银支付交易、信用卡密码输入、敏感核心业务首次账号密码注册、公司内网机密资产凭据传输。请务必认准绿色安全认证标签！
+              </p>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* 核心指标统计横幅 */}
@@ -897,7 +1206,7 @@ export default function AdminNodesPage() {
           <div className="text-3xl font-extrabold text-amber-400 tracking-tight">
             TCP/TLS <span className="text-xs text-slate-400 font-normal ml-1">真实握手测速</span>
           </div>
-          <div className="text-[11px] text-amber-400/80 mt-1 font-mono">支持单个测试与全量并发 Ping</div>
+          <div className="text-[11px] text-amber-400/80 mt-1 font-mono">支持单节点与全量并发 Ping</div>
         </div>
 
         <div className="p-5 rounded-2xl bg-gradient-to-br from-slate-900/90 to-slate-900/40 border border-slate-800/80 backdrop-blur-xl shadow-lg relative overflow-hidden group hover:border-rose-500/30 transition-all">
@@ -919,7 +1228,7 @@ export default function AdminNodesPage() {
           onClick={() => setActiveTab('channels')}
           className={`flex items-center gap-2 px-5 py-3 rounded-xl font-semibold text-sm transition-all whitespace-nowrap ${
             activeTab === 'channels'
-              ? 'bg-cyan-500 text-slate-950 shadow-lg shadow-cyan-500/20'
+              ? 'bg-cyan-500 text-slate-950 shadow-lg shadow-cyan-500/20 font-bold'
               : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
           }`}
         >
@@ -936,7 +1245,7 @@ export default function AdminNodesPage() {
           onClick={() => setActiveTab('nodes')}
           className={`flex items-center gap-2 px-5 py-3 rounded-xl font-semibold text-sm transition-all whitespace-nowrap ${
             activeTab === 'nodes'
-              ? 'bg-cyan-500 text-slate-950 shadow-lg shadow-cyan-500/20'
+              ? 'bg-cyan-500 text-slate-950 shadow-lg shadow-cyan-500/20 font-bold'
               : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
           }`}
         >
@@ -953,12 +1262,12 @@ export default function AdminNodesPage() {
           onClick={() => setActiveTab('clients')}
           className={`flex items-center gap-2 px-5 py-3 rounded-xl font-semibold text-sm transition-all whitespace-nowrap ${
             activeTab === 'clients'
-              ? 'bg-cyan-500 text-slate-950 shadow-lg shadow-cyan-500/20'
+              ? 'bg-cyan-500 text-slate-950 shadow-lg shadow-cyan-500/20 font-bold'
               : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
           }`}
         >
           <Laptop className="w-4 h-4" />
-          客户端接入与订阅指引
+          客户端接入与分流规则生成
         </button>
       </div>
 
@@ -1113,7 +1422,7 @@ export default function AdminNodesPage() {
                       {ch.description}
                     </p>
 
-                    {/* 变体版本 (短/精选 vs 全量) - 点击展开明细 */}
+                    {/* 细分通道列表 */}
                     <div className="space-y-2 mb-4 bg-slate-950/60 p-3 rounded-xl border border-slate-800/80">
                       <div className="text-[11px] font-medium text-slate-400 mb-1.5 flex items-center justify-between">
                         <span>包含细分通道 (点击任意项查看节点):</span>
@@ -1211,9 +1520,7 @@ export default function AdminNodesPage() {
       {/* ========================================================================= */}
       {activeTab === 'nodes' && (
         <div className="space-y-6">
-          {/* 筛选与搜索控制器 */}
           <div className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800/80 backdrop-blur-xl space-y-5 shadow-lg">
-            {/* 搜索框与状态 */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div className="relative flex-1">
                 <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -1362,7 +1669,6 @@ export default function AdminNodesPage() {
                   }`}
                 >
                   <div>
-                    {/* 头部：国旗、协议与延迟 */}
                     <div className="flex items-center justify-between mb-3">
                       <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-200 border border-slate-700/60 flex items-center gap-1.5 shadow-sm">
                         <span className="text-base">{node.country_flag}</span>
@@ -1380,7 +1686,6 @@ export default function AdminNodesPage() {
                           {node.protocol}
                         </span>
 
-                        {/* 实时测速按键与延迟标签 */}
                         <button
                           onClick={() => pingSingleTab2Node(node.id, node.host, node.port)}
                           disabled={livePing?.status === 'testing'}
@@ -1404,7 +1709,6 @@ export default function AdminNodesPage() {
                       </div>
                     </div>
 
-                    {/* 专属安全/防诱骗标签 */}
                     <div className="mb-2.5">
                       <span className={`inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-lg border ${
                         node.security_level === 'danger' ? 'bg-rose-500/20 text-rose-300 border-rose-500/50 animate-pulse' :
@@ -1423,13 +1727,11 @@ export default function AdminNodesPage() {
                       {node.host}:{node.port}
                     </p>
 
-                    {/* 审计说明 */}
                     <p className="text-[11px] text-slate-400 bg-slate-950/70 p-2.5 rounded-lg border border-slate-800/80 leading-relaxed mb-4">
                       {node.security_reason}
                     </p>
                   </div>
 
-                  {/* 底部操作按键 */}
                   <div className="flex items-center gap-2 pt-3 border-t border-slate-800/60">
                     <button
                       onClick={() => handleCopy(node.id, node.link)}
@@ -1523,11 +1825,10 @@ export default function AdminNodesPage() {
       )}
 
       {/* ========================================================================= */}
-      {/* TAB 3: 客户端接入与订阅指引 */}
+      {/* TAB 3: 客户端接入与分流规则生成 */}
       {/* ========================================================================= */}
       {activeTab === 'clients' && (
         <div className="space-y-6">
-          {/* 聚合核心卡片 */}
           <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-indigo-950/40 via-slate-900/80 to-slate-950/90 border border-indigo-500/30 backdrop-blur-xl shadow-2xl relative overflow-hidden">
             <div className="absolute top-0 right-0 w-80 h-80 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
 
@@ -1573,7 +1874,7 @@ export default function AdminNodesPage() {
             </div>
           </div>
 
-          {/* 常用客户端使用步骤指南 */}
+          {/* 客户端使用说明 */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800/80 hover:border-slate-700 transition-all flex flex-col justify-between">
               <div>
@@ -1643,11 +1944,11 @@ export default function AdminNodesPage() {
       )}
 
       {/* ========================================================================= */}
-      {/* 订阅节点详细查看器抽屉 / 弹窗 (INSPECTOR MODAL) */}
+      {/* 订阅节点详细查看器抽屉 (INSPECTOR MODAL) */}
       {/* ========================================================================= */}
       {inspectingSub && (
         <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 md:p-6 overflow-hidden animate-in fade-in duration-200">
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-6xl h-[92vh] flex flex-col shadow-2xl relative overflow-hidden">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-6xl h-[94vh] flex flex-col shadow-2xl relative overflow-hidden">
             {/* 抽屉头部 */}
             <div className="p-5 sm:p-6 border-b border-slate-800 bg-slate-950/60 flex flex-col md:flex-row md:items-center justify-between gap-4 shrink-0">
               <div>
@@ -1670,7 +1971,7 @@ export default function AdminNodesPage() {
                 </p>
               </div>
 
-              {/* 头部快速操作按键 */}
+              {/* 头部快捷按键 */}
               <div className="flex items-center gap-2 flex-wrap shrink-0">
                 <button
                   onClick={pingAllInspectorNodes}
@@ -1678,16 +1979,26 @@ export default function AdminNodesPage() {
                   className="px-3.5 py-2 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/40 text-cyan-300 text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm active:scale-95 disabled:opacity-50"
                 >
                   <Activity className={`w-3.5 h-3.5 ${inspectorPinging ? 'animate-spin' : ''}`} />
-                  {inspectorPinging ? `正在并发测速 (${inspectorPingProgress.current}/${inspectorPingProgress.total})...` : '⚡ 一键测速全部节点'}
+                  {inspectorPinging ? `测速中 (${inspectorPingProgress.current}/${inspectorPingProgress.total})...` : '⚡ 一键测速全部'}
+                </button>
+
+                <button
+                  onClick={openCleanExportModal}
+                  disabled={inspectorStats.safeCount === 0}
+                  className="px-3.5 py-2 rounded-xl bg-indigo-500/20 hover:bg-indigo-500/30 border border-indigo-500/40 text-indigo-300 text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm active:scale-95 disabled:opacity-50"
+                  title="自动清洗死节点与蜜罐，一键导出纯净可用订阅与 Clash 分流规则"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
+                  <span>🚀 清洗并导出纯净规则</span>
                 </button>
 
                 <button
                   onClick={copySafeNodesOnly}
                   disabled={inspectorStats.safeCount === 0}
-                  className="px-3.5 py-2 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-300 text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm active:scale-95 disabled:opacity-50"
+                  className="px-3 py-2 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-300 text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm active:scale-95 disabled:opacity-50"
                 >
                   {copiedSafeOnly ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <ShieldCheck className="w-3.5 h-3.5" />}
-                  {copiedSafeOnly ? '已复制认证安全节点' : `🛡️ 仅复制安全节点 (${inspectorStats.safeCount})`}
+                  {copiedSafeOnly ? '已复制安全节点' : `仅复制安全节点 (${inspectorStats.safeCount})`}
                 </button>
 
                 <button
@@ -1720,7 +2031,7 @@ export default function AdminNodesPage() {
                 </span>
                 <span className="flex items-center gap-1 text-amber-400 font-semibold">
                   <span className="w-2 h-2 rounded-full bg-amber-400" />
-                  标准/弱混淆: {inspectorStats.warningCount} 个
+                  标准混淆: {inspectorStats.warningCount} 个
                 </span>
                 {inspectorStats.honeypotCount > 0 ? (
                   <span className="flex items-center gap-1 text-rose-400 font-bold bg-rose-500/10 px-2 py-0.5 rounded-md border border-rose-500/30">
@@ -1735,7 +2046,7 @@ export default function AdminNodesPage() {
                 )}
               </div>
 
-              {/* 内部过滤条 */}
+              {/* 内部搜索与筛选 */}
               <div className="flex items-center gap-2">
                 <div className="relative w-44">
                   <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500" />
@@ -1800,7 +2111,6 @@ export default function AdminNodesPage() {
                             </span>
                           </div>
 
-                          {/* Ping 状态按键 */}
                           <button
                             onClick={() => pingSingleInspectorNode(i)}
                             disabled={item.pingStatus === 'testing'}
@@ -1827,11 +2137,22 @@ export default function AdminNodesPage() {
                           </button>
                         </div>
 
-                        {/* 专属安全防诱骗 Tag */}
-                        <div className="mb-2">
+                        {/* 安全防诱骗 Tag + 扩展画像徽章 */}
+                        <div className="flex flex-wrap gap-1.5 mb-2">
                           <span className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-lg border ${item.security.badgeClass}`}>
                             {item.security.tag}
                           </span>
+                          <span className="text-[10px] px-2 py-0.5 rounded bg-slate-800/80 text-slate-300 border border-slate-700">
+                            {item.enriched.ipTypeTag}
+                          </span>
+                          <span className="text-[10px] px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-300 border border-indigo-500/20">
+                            {item.enriched.aiTag}
+                          </span>
+                          {item.enriched.portTag && (
+                            <span className="text-[10px] px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/30">
+                              {item.enriched.portTag}
+                            </span>
+                          )}
                         </div>
 
                         {/* 节点名称与地址 */}
@@ -1842,10 +2163,14 @@ export default function AdminNodesPage() {
                           {item.host}:{item.port}
                         </p>
 
-                        {/* 审计原因 */}
-                        <p className="text-[11px] text-slate-400 bg-slate-950/60 p-2 rounded-lg border border-slate-800/80 leading-relaxed mb-3">
-                          {item.security.reason}
-                        </p>
+                        {/* 审计说明 */}
+                        <div className="text-[11px] text-slate-400 bg-slate-950/60 p-2.5 rounded-lg border border-slate-800/80 leading-relaxed mb-3 space-y-1">
+                          <div>{item.security.reason}</div>
+                          <div className="text-[10px] text-slate-500 flex items-center justify-between pt-1 border-t border-slate-800/60">
+                            <span>{item.enriched.dnsTag}</span>
+                            <span>{item.enriched.streamingTag}</span>
+                          </div>
+                        </div>
                       </div>
 
                       {/* 底部功能按键 */}
@@ -1877,11 +2202,139 @@ export default function AdminNodesPage() {
               <div>
                 当前显示: <span className="text-white font-bold">{filteredInspectorNodes.length}</span> / {inspectorNodes.length} 个节点
               </div>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={openCleanExportModal}
+                  className="px-3.5 py-1.5 rounded-xl bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 hover:bg-indigo-500/30 font-semibold transition-colors flex items-center gap-1"
+                >
+                  <Sparkles className="w-3.5 h-3.5" /> 导出纯净分流规则
+                </button>
+                <button
+                  onClick={() => setInspectingSub(null)}
+                  className="px-4 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold transition-colors"
+                >
+                  完成浏览
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* 纯净规则与可用节点导出弹窗 (CLEAN EXPORT MODAL) */}
+      {/* ========================================================================= */}
+      {cleanExportModal && (
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 overflow-hidden animate-in fade-in duration-200">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-3xl max-h-[90vh] flex flex-col shadow-2xl relative overflow-hidden">
+            <div className="p-5 sm:p-6 border-b border-slate-800 bg-slate-950/70 flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-indigo-500/20 border border-indigo-500/30 text-indigo-300 flex items-center justify-center font-bold">
+                  <Sparkles className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-white flex items-center gap-2">
+                    <span>已完成节点智能清洗与分流打包</span>
+                  </h3>
+                  <p className="text-xs text-slate-400">
+                    已自动剔除全部死节点与蜜罐，共包含 <span className="text-emerald-400 font-bold">{cleanExportModal.aliveCount}</span> 个纯净可用节点
+                  </p>
+                </div>
+              </div>
+
               <button
-                onClick={() => setInspectingSub(null)}
+                onClick={() => setCleanExportModal(null)}
+                className="p-1.5 rounded-xl bg-slate-800 text-slate-400 hover:text-white transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* 导出格式切换 TAB */}
+            <div className="flex items-center gap-2 px-6 pt-4 border-b border-slate-800 bg-slate-950/40 shrink-0">
+              <button
+                onClick={() => setCleanExportTab('clash')}
+                className={`flex items-center gap-1.5 pb-3 px-2 text-xs font-semibold border-b-2 transition-all ${
+                  cleanExportTab === 'clash'
+                    ? 'border-indigo-400 text-indigo-400'
+                    : 'border-transparent text-slate-400 hover:text-white'
+                }`}
+              >
+                <FileCode className="w-4 h-4" />
+                <span>Clash Verge Rev 完整配置 (YAML 带规则)</span>
+              </button>
+
+              <button
+                onClick={() => setCleanExportTab('raw')}
+                className={`flex items-center gap-1.5 pb-3 px-2 text-xs font-semibold border-b-2 transition-all ${
+                  cleanExportTab === 'raw'
+                    ? 'border-indigo-400 text-indigo-400'
+                    : 'border-transparent text-slate-400 hover:text-white'
+                }`}
+              >
+                <FileText className="w-4 h-4" />
+                <span>纯净节点列表 (Raw Links)</span>
+              </button>
+            </div>
+
+            {/* 内容预览与下载 */}
+            <div className="flex-1 overflow-y-auto p-5 bg-slate-950/90 font-mono text-xs">
+              {cleanExportTab === 'clash' ? (
+                <div className="relative">
+                  <div className="absolute top-2 right-2 flex items-center gap-2">
+                    <button
+                      onClick={downloadClashFile}
+                      className="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-sans text-xs font-semibold flex items-center gap-1.5 transition-colors shadow-sm"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      <span>下载 YAML 配置文件</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(cleanExportModal.clashYaml);
+                        setCopiedClash(true);
+                        setTimeout(() => setCopiedClash(false), 2000);
+                      }}
+                      className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-sans text-xs font-semibold flex items-center gap-1.5 transition-colors"
+                    >
+                      {copiedClash ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                      <span>{copiedClash ? '已复制' : '复制代码'}</span>
+                    </button>
+                  </div>
+                  <pre className="text-slate-300 whitespace-pre-wrap leading-relaxed overflow-x-auto pr-32">
+                    {cleanExportModal.clashYaml}
+                  </pre>
+                </div>
+              ) : (
+                <div className="relative">
+                  <div className="absolute top-2 right-2">
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(cleanExportModal.rawSafeLinks);
+                        setCopiedRawClean(true);
+                        setTimeout(() => setCopiedRawClean(false), 2000);
+                      }}
+                      className="px-3 py-1.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-sans text-xs font-bold flex items-center gap-1.5 transition-colors shadow-sm"
+                    >
+                      {copiedRawClean ? <Check className="w-3.5 h-3.5 text-emerald-950" /> : <Copy className="w-3.5 h-3.5" />}
+                      <span>{copiedRawClean ? '已复制纯净链接' : '复制全部纯净链接'}</span>
+                    </button>
+                  </div>
+                  <pre className="text-slate-300 whitespace-pre-wrap leading-relaxed overflow-x-auto pr-32">
+                    {cleanExportModal.rawSafeLinks}
+                  </pre>
+                </div>
+              )}
+            </div>
+
+            <div className="p-4 border-t border-slate-800 bg-slate-950/80 flex items-center justify-between text-xs text-slate-400 shrink-0">
+              <span>配置中已内置国内域名直连、广告拦截及海外 DoH 防污染规则。</span>
+              <button
+                onClick={() => setCleanExportModal(null)}
                 className="px-4 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold transition-colors"
               >
-                完成浏览
+                关闭
               </button>
             </div>
           </div>
